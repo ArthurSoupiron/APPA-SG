@@ -35,7 +35,8 @@ const ScreenDocuments = ({ navigate }) => {
           <div className="page__sub">486 documents centralisés · stockage cloud chiffré · accès SSO tracé</div>
         </div>
         <div className="page__actions">
-          <Btn icon="file-plus-2" onClick={() => openModal('doc')}>Générer depuis modèle</Btn>
+          <Btn icon="download" onClick={exportDocsCSV}>Exporter</Btn>
+          <Btn icon="file-plus-2" onClick={() => openModal('generate')}>Générer depuis modèle</Btn>
           <Btn kind="primary" icon="upload" onClick={() => openModal('doc')}>Déposer un document</Btn>
         </div>
       </div>
@@ -60,7 +61,7 @@ const ScreenDocuments = ({ navigate }) => {
             <span style={{ fontSize: 11 }}>{DOCS.filter(d => d.status === 'pending').length}</span>
           </div>
           <div className="nav-item" style={{ color: 'var(--ink-2)' }}>
-            <Icon name="star" /><span style={{ flex: 1 }}>Favoris</span><span style={{ fontSize: 11 }}>9</span>
+            <Icon name="star" /><span style={{ flex: 1 }}>Favoris</span><span style={{ fontSize: 11 }}>{DOCS.filter(d => d.fav).length}</span>
           </div>
         </aside>
 
@@ -124,7 +125,8 @@ const DocPreview = ({ doc, statusBadge }) => {
           <Badge tone="brand">{catLabel}</Badge>
           <Badge tone={sb.tone} dot>{sb.k}</Badge>
           <span className="spacer"></span>
-          <IconBtn icon="star" style={{ width: 28, height: 28 }} />
+          <IconBtn icon="star" title={doc.fav ? 'Retirer des favoris' : 'Ajouter aux favoris'} onClick={() => toggleGedFav(doc.id)}
+            style={{ width: 28, height: 28, color: doc.fav ? 'var(--warn)' : 'var(--ink-2)', borderColor: doc.fav ? 'var(--warn)' : 'var(--border)', background: doc.fav ? 'var(--warn-bg)' : 'var(--surface)' }} />
         </div>
         <div style={{ fontSize: 14.5, fontWeight: 600, lineHeight: 1.3 }}>{doc.title}</div>
         <div className="muted-2 mono" style={{ fontSize: 11, marginTop: 4 }}>{doc.ref} · {doc.date}</div>
@@ -175,9 +177,20 @@ const DocPreview = ({ doc, statusBadge }) => {
         </div>
       </div>
 
-      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        <Btn icon="eye">Ouvrir</Btn>
-        <Btn kind="primary" icon="download">Télécharger</Btn>
+      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {doc.status === 'pending'
+            ? <Btn kind="primary" icon="pen-tool" onClick={() => setGedStatus(doc.id, 'signed')}>Signer</Btn>
+            : doc.status === 'signed'
+              ? <Btn icon="archive" onClick={() => setGedStatus(doc.id, 'archived')}>Archiver</Btn>
+              : <Btn icon="rotate-ccw" onClick={() => setGedStatus(doc.id, 'pending')}>Réactiver</Btn>}
+          <IconBtn icon="trash-2" title="Supprimer le document" style={{ width: '100%' }}
+            onClick={() => openModal('confirm', { danger: true, title: 'Supprimer ce document ?', confirmLabel: 'Supprimer', message: `« ${doc.title} » sera retiré définitivement de la GED.`, onConfirm: () => deleteGedDoc(doc.id) })} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <Btn icon="eye">Ouvrir</Btn>
+          <Btn kind="primary" icon="download">Télécharger</Btn>
+        </div>
       </div>
     </aside>
   );

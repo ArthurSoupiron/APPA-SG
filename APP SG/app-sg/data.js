@@ -216,6 +216,54 @@ const addGedDoc = (data) => {
   return doc;
 };
 
+// met à jour les champs d'un dossier membre
+const updateMember = (id, patch) => {
+  const m = memberById(id);
+  if (!m) return;
+  Object.assign(m, patch);
+  if (patch.first || patch.last) m.initials = ((m.first[0] || '?') + (m.last[0] || '')).toUpperCase();
+  logActivity({ who: 'lb', action: 'a mis à jour le dossier de', target: `${m.first} ${m.last}`, ctx: 'identité éditée', icon: 'pencil', tone: 'neutral' });
+  sgCommit();
+};
+
+// supprime un dossier membre
+const deleteMember = (id) => {
+  const i = MEMBERS.findIndex(m => m.id === id);
+  if (i < 0) return;
+  const m = MEMBERS[i];
+  MEMBERS.splice(i, 1);
+  logActivity({ who: 'lb', action: 'a supprimé le dossier de', target: `${m.first} ${m.last}`, ctx: 'suppression définitive', icon: 'trash-2', tone: 'neutral' });
+  sgCommit();
+};
+
+// change le statut d'un document GED (signed / archived / pending)
+const setGedStatus = (id, status) => {
+  const d = DOCS.find(x => x.id === id);
+  if (!d) return;
+  d.status = status;
+  const verb = status === 'signed' ? 'a signé' : status === 'archived' ? 'a archivé' : 'a remis en attente';
+  logActivity({ who: 'lb', action: verb, target: d.title, ctx: 'GED', icon: status === 'signed' ? 'pen-tool' : status === 'archived' ? 'archive' : 'clock', tone: status === 'signed' ? 'violet' : 'neutral' });
+  sgCommit();
+};
+
+// (dé)marque un document comme favori
+const toggleGedFav = (id) => {
+  const d = DOCS.find(x => x.id === id);
+  if (!d) return;
+  d.fav = !d.fav;
+  sgCommit();
+};
+
+// supprime un document de la GED
+const deleteGedDoc = (id) => {
+  const i = DOCS.findIndex(x => x.id === id);
+  if (i < 0) return;
+  const d = DOCS[i];
+  DOCS.splice(i, 1);
+  logActivity({ who: 'lb', action: 'a supprimé', target: d.title, ctx: 'GED', icon: 'trash-2', tone: 'neutral' });
+  sgCommit();
+};
+
 // hydrate dès le chargement du module (avant le 1er render)
 sgHydrate();
 
@@ -232,4 +280,5 @@ Object.assign(window, {
   DOC_TYPES, GED_CATS, MEMBERS, DEADLINES, DOCS, ACTIVITY, STATUS_LABEL,
   dossierStats, memberById, rollups,
   sgCommit, sgReset, logActivity, addMember, setDocStatus, addGedDoc,
+  updateMember, deleteMember, setGedStatus, toggleGedFav, deleteGedDoc,
 });

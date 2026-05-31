@@ -19,6 +19,79 @@ const useStore = () => {
 // Ouvre une modale globale, gérée par <ModalHost/> dans App.
 const openModal = (type, props = {}) => window.dispatchEvent(new CustomEvent('sg:modal', { detail: { type, props } }));
 
+// ===== Utilitaires : téléchargement, CSV, modèles de documents =====
+const downloadBlob = (filename, content, type = 'text/plain;charset=utf-8') => {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+// tableau de lignes → CSV (séparateur « ; » pour Excel FR, BOM pour les accents)
+const toCSV = (rows) => '﻿' + rows.map(r => r.map(c => {
+  const s = String(c == null ? '' : c);
+  return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}).join(';')).join('\r\n');
+
+const exportMembersCSV = () => {
+  const header = ['Prénom', 'Nom', 'Email', 'Téléphone', 'Pôle', 'Rôle', 'Année', 'Promo', 'Statut', 'Ville', 'Complétude %', 'Pièces manquantes'];
+  const rows = MEMBERS.map(m => {
+    const s = dossierStats(m);
+    return [m.first, m.last, m.email, m.phone, m.pole, m.role, m.year, m.promo, (STATUS_LABEL[m.status] || {}).k || m.status, m.city, s.pct, s.missing];
+  });
+  downloadBlob('membres-jeece-sg.csv', toCSV([header, ...rows]), 'text/csv;charset=utf-8');
+};
+
+const exportDocsCSV = () => {
+  const header = ['Titre', 'Référence', 'Catégorie', 'Format', 'Pages', 'Statut', 'Confidentialité', 'Date', 'Tags'];
+  const rows = DOCS.map(d => [d.title, d.ref, (GED_CATS.find(c => c.id === d.cat) || {}).label || d.cat, d.format, d.pages, d.status, d.security, d.date, (d.tags || []).join(', ')]);
+  downloadBlob('documents-jeece-sg.csv', toCSV([header, ...rows]), 'text/csv;charset=utf-8');
+};
+
+// Modèles de documents officiels — renvoient un document HTML imprimable
+const DOC_TEMPLATES = [
+  { id: 'attestation', label: 'Attestation de fonction', cat: 'pref', icon: 'file-badge',
+    title: (m) => `Attestation de fonction — ${m.first} ${m.last}`,
+    body: (m) => `<p>Je soussigné·e, Président·e de l'association <strong>JEECE</strong> (Junior-Entreprise de l'ECE Paris),
+      atteste par la présente que :</p>
+      <p style="margin:18px 0;font-size:16px"><strong>${m.first} ${m.last}</strong>, né·e le ${m.birth || '—'},
+      étudiant·e en ${m.year} à l'ECE Paris (promotion ${m.promo}),</p>
+      <p>exerce les fonctions de <strong>${m.role}</strong> au sein du pôle ${m.pole} de l'association,
+      depuis ${m.joined}.</p>
+      <p>La présente attestation est délivrée à l'intéressé·e pour servir et valoir ce que de droit.</p>` },
+  { id: 'recu', label: "Reçu d'adhésion", cat: 'ba', icon: 'receipt',
+    title: (m) => `Reçu d'adhésion — ${m.first} ${m.last}`,
+    body: (m) => `<p>L'association <strong>JEECE</strong> accuse réception de l'adhésion de :</p>
+      <p style="margin:18px 0;font-size:16px"><strong>${m.first} ${m.last}</strong> — ${m.email}</p>
+      <p>Statut : <strong>${(STATUS_LABEL[m.status] || {}).k || m.status}</strong> · Pôle ${m.pole} · Adhésion depuis ${m.joined}.</p>
+      <p>Ce reçu confirme l'inscription du membre au registre de l'association pour le mandat 2025–2026.</p>` },
+];
+
+const renderDocHTML = (tpl, m) => {
+  const today = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${tpl.title(m)}</title>
+    <style>
+      body{font-family:Georgia,'Times New Roman',serif;color:#14271C;max-width:720px;margin:40px auto;padding:0 32px;line-height:1.6}
+      .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1A9E55;padding-bottom:16px;margin-bottom:28px}
+      .brand{font-family:Arial,sans-serif;font-weight:700;font-size:20px;color:#0F6E39}
+      .brand small{display:block;font-weight:400;font-size:11px;color:#587065;letter-spacing:.04em}
+      h1{font-size:20px;margin:0 0 24px}
+      .meta{font-family:Arial,sans-serif;font-size:12px;color:#587065;text-align:right}
+      .sign{margin-top:48px;display:flex;justify-content:space-between;align-items:flex-end}
+      .stamp{width:90px;height:90px;border:2px solid #1A9E55;border-radius:50%;color:#1A9E55;display:flex;align-items:center;justify-content:center;text-align:center;font-family:Arial,sans-serif;font-size:10px;font-weight:700;transform:rotate(-8deg);opacity:.8}
+      @media print{body{margin:0}}
+    </style></head><body>
+    <div class="head"><div class="brand">JEECE<small>Junior-Entreprise · ECE Paris</small></div>
+      <div class="meta">Paris, le ${today}<br>Mandat 2025–2026</div></div>
+    <h1>${tpl.title(m)}</h1>
+    ${tpl.body(m)}
+    <div class="sign"><div>Fait à Paris, le ${today}<br><br>La Présidence</div>
+      <div class="stamp">JEECE<br>ECE PARIS</div></div>
+  </body></html>`;
+};
+
 const Avatar = ({ m, size = 34, av, initials }) => {
   const i = m?.initials || initials || '?';
   const a = m?.av || av || 'g1';
@@ -363,6 +436,81 @@ const NewDocModal = ({ onClose, author }) => {
   );
 };
 
+const EditMemberModal = ({ onClose, memberId }) => {
+  const m = memberById(memberId);
+  const poles = Array.from(new Set(MEMBERS.map(x => x.pole)));
+  const [f, setF] = React.useState(m ? { first: m.first, last: m.last, email: m.email, role: m.role, pole: m.pole, year: m.year, status: m.status, phone: m.phone, city: m.city, birth: m.birth || '', address: m.address || '' } : null);
+  const set = (k) => (v) => setF(s => ({ ...s, [k]: v }));
+  if (!m) return null;
+  const valid = f.first.trim() && f.last.trim();
+  const submit = () => { if (!valid) return; updateMember(memberId, f); onClose(); };
+  return (
+    <Modal icon="pencil" title="Éditer l'identité" sub={`${m.first} ${m.last}`} onClose={onClose}
+      footer={<><Btn onClick={onClose}>Annuler</Btn><Btn kind="primary" icon="check" onClick={submit}>Enregistrer</Btn></>}>
+      <div className="form-row">
+        <Field label="Prénom" required half><TextField value={f.first} onChange={set('first')} /></Field>
+        <Field label="Nom" required half><TextField value={f.last} onChange={set('last')} /></Field>
+      </div>
+      <div className="form-row">
+        <Field label="Date de naissance" half><TextField value={f.birth} onChange={set('birth')} placeholder="12 janvier 2004" /></Field>
+        <Field label="Téléphone" half><TextField value={f.phone} onChange={set('phone')} /></Field>
+      </div>
+      <Field label="Email"><TextField value={f.email} onChange={set('email')} type="email" /></Field>
+      <Field label="Adresse"><TextField value={f.address} onChange={set('address')} placeholder="8 rue Saint-Maur, 75011 Paris" /></Field>
+      <div className="form-row">
+        <Field label="Rôle" half><TextField value={f.role} onChange={set('role')} /></Field>
+        <Field label="Pôle" half><SelectField value={f.pole} onChange={set('pole')} options={poles.map(p => ({ value: p, label: p }))} /></Field>
+      </div>
+      <div className="form-row">
+        <Field label="Année" half><SelectField value={f.year} onChange={set('year')} options={['L1','L2','L3','M1','M2','Diplômé'].map(y => ({ value: y, label: y }))} /></Field>
+        <Field label="Statut" half><SelectField value={f.status} onChange={set('status')} options={[{value:'active',label:'Actif'},{value:'pending',label:'Postulant'},{value:'alumni',label:'Alumni'},{value:'inactive',label:'Inactif'}]} /></Field>
+      </div>
+      <Field label="Ville"><TextField value={f.city} onChange={set('city')} /></Field>
+    </Modal>
+  );
+};
+
+const GenerateDocModal = ({ onClose, memberId }) => {
+  const others = MEMBERS;
+  const [mid, setMid] = React.useState(memberId || (others[0] && others[0].id));
+  const [tplId, setTplId] = React.useState(DOC_TEMPLATES[0].id);
+  const m = memberById(mid);
+  const tpl = DOC_TEMPLATES.find(t => t.id === tplId);
+  const generate = () => {
+    if (!m || !tpl) return;
+    const html = renderDocHTML(tpl, m);
+    downloadBlob(`${tpl.title(m).replace(/[^\w\- ]/g, '')}.html`, html, 'text/html;charset=utf-8');
+    addGedDoc({ title: tpl.title(m), cat: tpl.cat, format: 'HTML', status: 'pending', author: 'lb', tags: 'généré, modèle', security: 'Interne' });
+    onClose();
+  };
+  return (
+    <Modal icon="file-plus-2" title="Générer un document" sub="Pré-rempli depuis les infos du membre · téléchargé + ajouté à la GED" onClose={onClose}
+      footer={<><Btn onClick={onClose}>Annuler</Btn><Btn kind="primary" icon="download" onClick={generate}>Générer & télécharger</Btn></>}>
+      <Field label="Modèle">
+        <SelectField value={tplId} onChange={setTplId} options={DOC_TEMPLATES.map(t => ({ value: t.id, label: t.label }))} />
+      </Field>
+      <Field label="Membre concerné">
+        <SelectField value={mid} onChange={setMid} options={others.map(x => ({ value: x.id, label: `${x.first} ${x.last} · ${x.role}` }))} />
+      </Field>
+      {m && tpl && (
+        <div className="form-hint" style={{ display: 'block' }}>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}><Icon name="eye" style={{ width: 13, height: 13 }} /> Aperçu</div>
+          « {tpl.title(m)} » — généré au nom de {m.first} {m.last} ({m.role}, {m.pole}).
+        </div>
+      )}
+    </Modal>
+  );
+};
+
+const ConfirmModal = ({ onClose, title, message, confirmLabel = 'Confirmer', danger, onConfirm }) => (
+  <Modal icon={danger ? 'trash-2' : 'help-circle'} title={title} onClose={onClose} width={420}
+    footer={<><Btn onClick={onClose}>Annuler</Btn>
+      <Btn kind="primary" icon={danger ? 'trash-2' : 'check'} style={danger ? { background: 'var(--danger)', borderColor: 'var(--danger)', boxShadow: 'none' } : null}
+        onClick={() => { onConfirm && onConfirm(); onClose(); }}>{confirmLabel}</Btn></>}>
+    <div style={{ fontSize: 13.5, color: 'var(--ink-2)', lineHeight: 1.5 }}>{message}</div>
+  </Modal>
+);
+
 // Hôte des modales : écoute « sg:modal » et affiche la bonne modale.
 const ModalHost = ({ navigate }) => {
   const [modal, setModal] = React.useState(null);
@@ -374,10 +522,13 @@ const ModalHost = ({ navigate }) => {
   if (!modal) return null;
   const close = () => setModal(null);
   const p = modal.props || {};
-  if (modal.type === 'member') return <NewMemberModal onClose={close} navigate={navigate} />;
-  if (modal.type === 'doc')    return <NewDocModal onClose={close} {...p} />;
-  if (modal.type === 'piece')  return <UploadPieceModal onClose={close} {...p} />;
+  if (modal.type === 'member')     return <NewMemberModal onClose={close} navigate={navigate} />;
+  if (modal.type === 'editMember') return <EditMemberModal onClose={close} {...p} />;
+  if (modal.type === 'doc')        return <NewDocModal onClose={close} {...p} />;
+  if (modal.type === 'piece')      return <UploadPieceModal onClose={close} {...p} />;
+  if (modal.type === 'generate')   return <GenerateDocModal onClose={close} {...p} />;
+  if (modal.type === 'confirm')    return <ConfirmModal onClose={close} {...p} />;
   return null;
 };
 
-Object.assign(window, { cls, useIcons, useStore, openModal, Icon, Avatar, Badge, Btn, IconBtn, Card, Empty, Ring, Bar, Sidebar, Header, Modal, Field, TextField, SelectField, ModalHost });
+Object.assign(window, { cls, useIcons, useStore, openModal, downloadBlob, toCSV, exportMembersCSV, exportDocsCSV, Icon, Avatar, Badge, Btn, IconBtn, Card, Empty, Ring, Bar, Sidebar, Header, Modal, Field, TextField, SelectField, ModalHost });

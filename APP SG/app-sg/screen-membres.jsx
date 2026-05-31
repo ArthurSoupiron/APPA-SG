@@ -50,7 +50,7 @@ const ScreenMembres = ({ navigate }) => {
           <div className="page__sub">{MEMBERS.length} dossiers centralisés · {counts.complete} complets · {counts.incomplete} à régulariser</div>
         </div>
         <div className="page__actions">
-          <Btn icon="download">Exporter</Btn>
+          <Btn icon="download" onClick={exportMembersCSV}>Exporter</Btn>
           <Btn icon="upload">Importer</Btn>
           <Btn kind="primary" icon="user-plus" onClick={() => openModal('member')}>Nouveau membre</Btn>
         </div>
@@ -121,7 +121,8 @@ const ScreenMembres = ({ navigate }) => {
                         <span className="tabular" style={{ fontWeight: 600, fontSize: 12.5, width: 34 }}>{s.pct}%</span>
                       </div>
                     </td>
-                    <td onClick={(e) => e.stopPropagation()}><IconBtn icon="more-horizontal" style={{ width: 30, height: 30 }} /></td>
+                    <td onClick={(e) => e.stopPropagation()}><IconBtn icon="trash-2" title="Supprimer le dossier" style={{ width: 30, height: 30 }}
+                      onClick={() => openModal('confirm', { danger: true, title: 'Supprimer ce dossier ?', confirmLabel: 'Supprimer', message: `Le dossier de ${m.first} ${m.last} et son suivi de pièces seront définitivement supprimés.`, onConfirm: () => deleteMember(m.id) })} /></td>
                   </tr>
                 );
               })}

@@ -58,8 +58,13 @@ const ScreenDossier = ({ navigate, memberId }) => {
             <div style={{ fontSize: 11, color: 'var(--ink-2)', fontWeight: 550 }}>Dossier {s.pct}%</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Btn kind="primary" icon="file-plus-2" onClick={() => openModal('doc', { author: m.id })}>Générer un doc</Btn>
+            <Btn kind="primary" icon="file-plus-2" onClick={() => openModal('generate', { memberId: m.id })}>Générer un doc</Btn>
             <Btn icon="upload" onClick={() => openModal('piece', { memberId: m.id })}>Déposer une pièce</Btn>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <Btn size="sm" icon="printer" onClick={() => window.print()} style={{ flex: 1 }}>Imprimer</Btn>
+              <IconBtn icon="trash-2" title="Supprimer le dossier"
+                onClick={() => openModal('confirm', { danger: true, title: 'Supprimer ce dossier ?', confirmLabel: 'Supprimer', message: `Le dossier de ${m.first} ${m.last} sera définitivement supprimé.`, onConfirm: () => { deleteMember(m.id); navigate('membres'); } })} />
+            </div>
           </div>
         </div>
         {/* sub stats */}
@@ -170,7 +175,7 @@ const ScreenDossier = ({ navigate, memberId }) => {
 
       {/* IDENTITE tab */}
       {tab === 'identite' && (
-        <Card title="Identité complète" action={<Btn kind="ghost" size="sm" icon="edit-3">Éditer</Btn>} noBody>
+        <Card title="Identité complète" action={<Btn kind="ghost" size="sm" icon="edit-3" onClick={() => openModal('editMember', { memberId: m.id })}>Éditer</Btn>} noBody>
           {[
             ['Prénom', m.first], ['Nom', m.last], ['Date de naissance', m.birth || '—'],
             ['Email JEECE', m.email], ['Téléphone', m.phone], ['Ville', m.city],
