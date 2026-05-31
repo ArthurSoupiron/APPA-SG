@@ -3,15 +3,8 @@ const ScreenConformite = ({ navigate }) => {
   useIcons();
   const r = rollups();
 
-  const checks = [
-    { k: 'Statuts à jour & déposés', s: 'Version consolidée 2026 · Préfecture', state: 'ok', ref: 'STAT-2026-V4' },
-    { k: "PV de la dernière AG signé", s: 'AG Extraordinaire du 28 avril 2026', state: 'ok', ref: 'PV-AG-2026-002' },
-    { k: 'Règlement intérieur validé', s: 'v.4 en attente de signature Présidence', state: 'pending', ref: 'RI-2026-V4' },
-    { k: 'Déclaration changement de bureau', s: 'Cerfa 13971 déposé · 20 sept 2025', state: 'ok', ref: 'PREF-2025-014' },
-    { k: 'Assurance RC en cours de validité', s: 'Allianz · renouvellement avant le 22 juin', state: 'pending', ref: 'ASSU-2025-002' },
-    { k: 'Comptes annuels 2025 déposés', s: 'JOAFE · échéance 30 juin 2026', state: 'todo', ref: 'COMPTA-2025' },
-    { k: 'Dossiers membres complets', s: `${r.complete}/${r.membersTotal} conformes · ${r.incomplete.length} à régulariser`, state: r.incomplete.length ? 'pending' : 'ok', ref: null },
-  ];
+  const dossierCheck = { id: '__dossiers', k: 'Dossiers membres complets', s: `${r.complete}/${r.membersTotal} conformes · ${r.incomplete.length} à régulariser`, state: r.incomplete.length ? 'pending' : 'ok', ref: null, computed: true };
+  const checks = [...CONFORMITE, dossierCheck];
   const stateMap = {
     ok: { tone: 'ok', label: 'Conforme', icon: 'check-circle', color: 'var(--brand)', bg: 'var(--ok-bg)' },
     pending: { tone: 'warn', label: 'En cours', icon: 'clock', color: 'var(--warn)', bg: 'var(--warn-bg)' },
@@ -41,8 +34,8 @@ const ScreenConformite = ({ navigate }) => {
         </div>
         {[
           { ic: 'folder-check', label: 'Dossiers conformes', v: `${r.completePct}%`, tone: 'brand' },
-          { ic: 'file-clock', label: 'Documents à signer', v: '2', tone: 'warn' },
-          { ic: 'calendar-clock', label: 'Échéances < 30j', v: '3', tone: 'danger' },
+          { ic: 'file-clock', label: 'Documents à signer', v: String(DOCS.filter(d => d.status === 'pending').length), tone: 'warn' },
+          { ic: 'calendar-clock', label: 'Échéances < 30j', v: String(DEADLINES.filter(d => { const i = deadlineInfo(d); return i.days >= 0 && i.days <= 30; }).length), tone: 'danger' },
         ].map((x, i) => (
           <div key={i} className="card" style={{ padding: 18 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
@@ -72,7 +65,8 @@ const ScreenConformite = ({ navigate }) => {
                   <div className="muted-2" style={{ fontSize: 11.5 }}>{c.s}{c.ref && <span className="mono"> · {c.ref}</span>}</div>
                 </div>
                 <Badge tone={sm.tone} dot>{sm.label}</Badge>
-                {c.state !== 'ok' && <Btn size="sm" icon="arrow-right">Traiter</Btn>}
+                {c.state !== 'ok' && <Btn size="sm" icon="arrow-right"
+                  onClick={() => c.computed ? navigate('membres') : advanceCheck(c.id)}>Traiter</Btn>}
               </div>
             );
           })}
@@ -80,20 +74,26 @@ const ScreenConformite = ({ navigate }) => {
 
         <Card head={<>
           <div><div className="card__title">Prochaines échéances</div><div className="card__sub">Calendrier réglementaire</div></div>
+          <div className="spacer"></div>
+          <Btn kind="ghost" size="sm" icon="calendar-plus" onClick={() => openModal('deadline')}>Ajouter</Btn>
         </>} noBody>
-          {DEADLINES.map((d, i) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 12, alignItems: 'center', padding: '12px 17px', borderBottom: i < DEADLINES.length - 1 ? '1px solid var(--border)' : 'none' }}>
-              <div style={{ width: 46, textAlign: 'center', border: '1px solid var(--border)', borderRadius: 9, padding: '6px 2px', background: d.tone === 'warn' ? 'var(--warn-bg)' : 'var(--surface-2)' }}>
-                <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1, color: d.tone === 'warn' ? '#9A6212' : 'var(--ink)' }}>{d.day}</div>
-                <div style={{ fontSize: 9.5, color: 'var(--ink-3)', textTransform: 'uppercase', marginTop: 2 }}>{d.mo}</div>
+          {DEADLINES.map((d, i) => {
+            const info = deadlineInfo(d);
+            return (
+            <div key={d.id || i} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto auto', gap: 12, alignItems: 'center', padding: '12px 17px', borderBottom: i < DEADLINES.length - 1 ? '1px solid var(--border)' : 'none' }}>
+              <div style={{ width: 46, textAlign: 'center', border: '1px solid var(--border)', borderRadius: 9, padding: '6px 2px', background: info.tone === 'warn' ? 'var(--warn-bg)' : 'var(--surface-2)' }}>
+                <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1, color: info.tone === 'warn' ? '#9A6212' : 'var(--ink)' }}>{info.day}</div>
+                <div style={{ fontSize: 9.5, color: 'var(--ink-3)', textTransform: 'uppercase', marginTop: 2 }}>{info.mo}</div>
               </div>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 550 }}>{d.title}</div>
                 <div className="muted-2" style={{ fontSize: 11 }}><Badge style={{ marginRight: 4 }}>{d.kind}</Badge>{d.sub}</div>
               </div>
-              <Badge tone={d.tone === 'warn' ? 'warn' : d.tone === 'info' ? 'info' : 'neutral'}>{d.delta}</Badge>
+              <Badge tone={info.tone === 'warn' ? 'warn' : info.tone === 'info' ? 'info' : info.tone === 'danger' ? 'danger' : 'neutral'}>{info.delta}</Badge>
+              <IconBtn icon="trash-2" title="Supprimer l'échéance" style={{ width: 28, height: 28 }} onClick={() => deleteDeadline(d.id)} />
             </div>
-          ))}
+            );
+          })}
         </Card>
       </div>
     </section>

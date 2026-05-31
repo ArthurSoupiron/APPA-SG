@@ -51,7 +51,7 @@ const ScreenMembres = ({ navigate }) => {
         </div>
         <div className="page__actions">
           <Btn icon="download" onClick={exportMembersCSV}>Exporter</Btn>
-          <Btn icon="upload">Importer</Btn>
+          <Btn icon="upload" onClick={() => openModal('import')}>Importer</Btn>
           <Btn kind="primary" icon="user-plus" onClick={() => openModal('member')}>Nouveau membre</Btn>
         </div>
       </div>

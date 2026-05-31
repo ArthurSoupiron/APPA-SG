@@ -122,9 +122,17 @@ const ScreenDossier = ({ navigate, memberId }) => {
                     <Icon name={sm.icon} style={{ width: 12, height: 12 }} />{sm.label}
                   </span>
                   {v === 'ok'
-                    ? <div style={{ display: 'flex', gap: 4 }}><IconBtn icon="eye" style={{ width: 30, height: 30 }} /><IconBtn icon="download" style={{ width: 30, height: 30 }} /></div>
+                    ? (() => {
+                        const file = (m.files || {})[d.code];
+                        return <div style={{ display: 'flex', gap: 4 }}>
+                          <IconBtn icon="eye" title={file ? 'Ouvrir le fichier' : 'Aucun fichier joint'} style={{ width: 30, height: 30 }}
+                            onClick={() => file && window.open(file.dataURL, '_blank')} />
+                          <IconBtn icon="download" title={file ? 'Télécharger' : 'Aucun fichier joint'} style={{ width: 30, height: 30 }}
+                            onClick={() => { if (!file) return; const a = document.createElement('a'); a.href = file.dataURL; a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); }} />
+                        </div>;
+                      })()
                     : <Btn size="sm" kind={v === 'missing' ? 'primary' : 'default'} icon={v === 'missing' ? 'upload' : 'check'}
-                        onClick={() => setDocStatus(m.id, d.code, v === 'missing' ? 'pending' : 'ok')}>{v === 'missing' ? 'Ajouter' : 'Valider'}</Btn>}
+                        onClick={() => v === 'missing' ? openModal('piece', { memberId: m.id }) : setDocStatus(m.id, d.code, 'ok')}>{v === 'missing' ? 'Ajouter' : 'Valider'}</Btn>}
                 </div>
               );
             })}
@@ -193,15 +201,27 @@ const ScreenDossier = ({ navigate, memberId }) => {
 
       {/* PARCOURS tab */}
       {tab === 'parcours' && (
-        <Card title="Parcours JEECE" sub={`${mandates.length} mandat(s) · depuis ${m.joined}`} noBody>
+        <Card head={<>
+          <div><div className="card__title">Parcours JEECE</div><div className="card__sub">{mandates.length} mandat(s) · depuis {m.joined}</div></div>
+          <div className="spacer"></div>
+          <Btn kind="primary" size="sm" icon="plus" onClick={() => openModal('mandate', { memberId: m.id })}>Ajouter un mandat</Btn>
+        </>} noBody>
           <div style={{ padding: '16px 20px' }}>
             {mandates.map((md, i) => (
-              <div key={i} style={{ position: 'relative', paddingLeft: 26, paddingBottom: i < mandates.length - 1 ? 20 : 0 }}>
+              <div key={i} style={{ position: 'relative', paddingLeft: 26, paddingBottom: i < mandates.length - 1 ? 20 : 0, display: 'flex', alignItems: 'flex-start' }}>
                 {i < mandates.length - 1 && <span style={{ position: 'absolute', left: 5, top: 16, bottom: 0, width: 1.5, background: 'var(--border)' }}></span>}
                 <span style={{ position: 'absolute', left: 0, top: 4, width: 11, height: 11, borderRadius: 99, background: md.current ? 'var(--brand)' : 'var(--ink-3)', border: '2px solid #fff', boxShadow: '0 0 0 1px var(--border)' }}></span>
-                <div style={{ fontWeight: 600, fontSize: 13.5 }}>{md.role}</div>
-                <div className="muted-2" style={{ fontSize: 12 }}>{md.period}</div>
-                {md.current && <Badge tone="ok" style={{ marginTop: 6 }}>Mandat en cours</Badge>}
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, fontSize: 13.5 }}>{md.role}</div>
+                  <div className="muted-2" style={{ fontSize: 12 }}>{md.period}</div>
+                  {md.current && <Badge tone="ok" style={{ marginTop: 6 }}>Mandat en cours</Badge>}
+                </div>
+                {Array.isArray(m.mandates) && (
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {md.current && <Btn size="sm" kind="ghost" icon="flag" onClick={() => endMandate(m.id, i)}>Clôturer</Btn>}
+                    <IconBtn icon="trash-2" title="Supprimer ce mandat" style={{ width: 28, height: 28 }} onClick={() => deleteMandate(m.id, i)} />
+                  </div>
+                )}
               </div>
             ))}
           </div>

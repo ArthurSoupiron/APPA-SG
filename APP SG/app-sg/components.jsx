@@ -92,6 +92,64 @@ const renderDocHTML = (tpl, m) => {
   </body></html>`;
 };
 
+// ===== Fichiers : lecture + zone de dépôt =====
+const MAX_FILE = 1.5 * 1024 * 1024; // 1,5 Mo (limite localStorage)
+const readFileAsDataURL = (file) => new Promise((res, rej) => {
+  const r = new FileReader();
+  r.onload = () => res(r.result);
+  r.onerror = rej;
+  r.readAsDataURL(file);
+});
+const humanSize = (b) => b < 1024 ? b + ' o' : b < 1048576 ? Math.round(b / 1024) + ' Ko' : (b / 1048576).toFixed(1) + ' Mo';
+
+const FileDrop = ({ value, onPick, accept = '.pdf,image/*' }) => {
+  const [err, setErr] = React.useState('');
+  const [over, setOver] = React.useState(false);
+  const inputRef = React.useRef();
+  const handle = async (file) => {
+    if (!file) return;
+    if (file.size > MAX_FILE) { setErr(`Fichier trop lourd (${humanSize(file.size)}). Maximum ${humanSize(MAX_FILE)}.`); return; }
+    setErr('');
+    const dataURL = await readFileAsDataURL(file);
+    onPick({ name: file.name, type: file.type, size: file.size, dataURL });
+  };
+  return (
+    <div>
+      <div className={cls('dropzone', over && 'dropzone--over')}
+        onClick={() => inputRef.current && inputRef.current.click()}
+        onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+        onDragLeave={() => setOver(false)}
+        onDrop={(e) => { e.preventDefault(); setOver(false); handle(e.dataTransfer.files[0]); }}>
+        <input ref={inputRef} type="file" accept={accept} style={{ display: 'none' }}
+          onChange={(e) => handle(e.target.files[0])} />
+        {value ? (
+          <div className="row" style={{ gap: 9, justifyContent: 'center' }}>
+            <Icon name="file-check-2" style={{ width: 18, height: 18, color: 'var(--brand)' }} />
+            <span style={{ fontSize: 12.5, fontWeight: 550 }}>{value.name}</span>
+            <span className="muted-2" style={{ fontSize: 11 }}>{humanSize(value.size)}</span>
+            <IconBtn icon="x" title="Retirer" style={{ width: 26, height: 26 }} onClick={(e) => { e.stopPropagation(); onPick(null); }} />
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', color: 'var(--ink-2)' }}>
+            <Icon name="upload-cloud" style={{ width: 22, height: 22, color: 'var(--ink-3)' }} />
+            <div style={{ fontSize: 12.5, marginTop: 4 }}>Glissez un fichier ici, ou <span style={{ color: 'var(--brand-700)', fontWeight: 600 }}>parcourir</span></div>
+            <div className="muted-2" style={{ fontSize: 11, marginTop: 2 }}>PDF ou image · max {humanSize(MAX_FILE)}</div>
+          </div>
+        )}
+      </div>
+      {err && <div className="form-hint" style={{ marginTop: 8, color: '#B23A33', borderColor: 'var(--danger-bg)', background: 'var(--danger-bg)' }}><Icon name="alert-triangle" style={{ width: 13, height: 13 }} />{err}</div>}
+    </div>
+  );
+};
+
+// Aperçu d'un fichier stocké (image ou PDF) via son dataURL
+const FilePreview = ({ file, height = 340 }) => {
+  if (!file) return null;
+  if ((file.type || '').startsWith('image/')) return <img src={file.dataURL} alt={file.name} style={{ width: '100%', borderRadius: 8, display: 'block' }} />;
+  if ((file.type || '').includes('pdf')) return <iframe src={file.dataURL} title={file.name} style={{ width: '100%', height, border: 'none', borderRadius: 8 }} />;
+  return <div className="form-hint"><Icon name="file" style={{ width: 13, height: 13 }} />{file.name} — aperçu non disponible</div>;
+};
+
 const Avatar = ({ m, size = 34, av, initials }) => {
   const i = m?.initials || initials || '?';
   const a = m?.av || av || 'g1';
@@ -224,9 +282,23 @@ const Sidebar = ({ route, navigate }) => {
 };
 
 // ===== Header =====
+// Notifications calculées en direct depuis les données
+const buildNotifs = () => {
+  const ns = [];
+  const incomplete = MEMBERS.filter(m => m.status !== 'alumni' && dossierStats(m).pct < 100);
+  if (incomplete.length) ns.push({ ic: 'folder-x', t: `${incomplete.length} dossier(s) membres incomplets`, s: 'Pièces manquantes · à régulariser', tone: 'var(--danger)', go: 'membres' });
+  const toSign = DOCS.filter(d => d.status === 'pending');
+  if (toSign.length) ns.push({ ic: 'file-signature', t: `${toSign.length} document(s) à signer`, s: toSign[0].title, tone: 'var(--brand)', go: 'documents' });
+  const soon = DEADLINES.map(d => ({ d, info: deadlineInfo(d) })).filter(x => x.info.days >= 0 && x.info.days <= 30).sort((a, b) => a.info.days - b.info.days)[0];
+  if (soon) ns.push({ ic: 'calendar-clock', t: `${soon.d.title} · ${soon.info.delta}`, s: soon.d.sub, tone: 'var(--warn)', go: 'conformite' });
+  return ns;
+};
+
 const Header = ({ crumbs = [], search, setSearch, navigate }) => {
   const [openSearch, setOpenSearch] = React.useState(false);
   const [openNotif, setOpenNotif] = React.useState(false);
+  const [active, setActive] = React.useState(0);
+  const inputRef = React.useRef();
   const q = (search || '').trim().toLowerCase();
 
   const results = q ? [
@@ -234,11 +306,37 @@ const Header = ({ crumbs = [], search, setSearch, navigate }) => {
     ...DOCS.filter(d => d.title.toLowerCase().includes(q) || d.ref.toLowerCase().includes(q)).slice(0, 3).map(d => ({ type: 'doc', d })),
   ] : [];
 
+  React.useEffect(() => { setActive(0); }, [q]);
+
   React.useEffect(() => {
     const close = () => { setOpenNotif(false); setOpenSearch(false); };
     window.addEventListener('click', close);
-    return () => window.removeEventListener('click', close);
+    // raccourci ⌘K / Ctrl+K → focus la recherche
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        inputRef.current && inputRef.current.focus();
+        setOpenSearch(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => { window.removeEventListener('click', close); window.removeEventListener('keydown', onKey); };
   }, []);
+
+  const go = (r) => {
+    if (!r) return;
+    if (r.type === 'membre') navigate(`dossier/${r.m.id}`); else navigate('documents');
+    setSearch(''); setOpenSearch(false);
+  };
+  const onSearchKey = (e) => {
+    if (!results.length) { if (e.key === 'Escape') { setOpenSearch(false); e.target.blur(); } return; }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActive(a => Math.min(a + 1, results.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(a => Math.max(a - 1, 0)); }
+    else if (e.key === 'Enter') { e.preventDefault(); go(results[active]); }
+    else if (e.key === 'Escape') { setOpenSearch(false); e.target.blur(); }
+  };
+
+  const notifs = buildNotifs();
 
   return (
     <header className="header">
@@ -255,27 +353,30 @@ const Header = ({ crumbs = [], search, setSearch, navigate }) => {
       <div style={{ position: 'relative', flex: 1, maxWidth: 420, marginLeft: 6 }} onClick={(e) => e.stopPropagation()}>
         <div className="search">
           <Icon name="search" />
-          <input placeholder="Rechercher un membre, un document, une référence…"
+          <input ref={inputRef} placeholder="Rechercher un membre, un document, une référence…"
             value={search || ''} onChange={(e) => { setSearch(e.target.value); setOpenSearch(true); }}
-            onFocus={() => setOpenSearch(true)} />
+            onFocus={() => setOpenSearch(true)} onKeyDown={onSearchKey} />
           <kbd>⌘K</kbd>
         </div>
         {openSearch && q && (
           <div className="pop" style={{ top: 'calc(100% + 6px)', left: 0, right: 0, padding: 6 }}>
             {results.length === 0 && <div style={{ padding: '10px 12px', color: 'var(--ink-3)', fontSize: 13 }}>Aucun résultat pour « {search} »</div>}
             {results.map((r, i) => r.type === 'membre' ? (
-              <div key={i} className="pop__item" onClick={() => { navigate(`dossier/${r.m.id}`); setSearch(''); setOpenSearch(false); }}>
+              <div key={i} className="pop__item" style={i === active ? { background: 'var(--brand-050)' } : null} onMouseEnter={() => setActive(i)} onClick={() => go(r)}>
                 <Avatar m={r.m} size={26} />
                 <div style={{ flex: 1 }}><div style={{ fontWeight: 550 }}>{r.m.first} {r.m.last}</div><div className="muted-2" style={{ fontSize: 11.5 }}>{r.m.role}</div></div>
                 <Badge tone="ok">Membre</Badge>
               </div>
             ) : (
-              <div key={i} className="pop__item" onClick={() => { navigate('documents'); setSearch(''); setOpenSearch(false); }}>
+              <div key={i} className="pop__item" style={i === active ? { background: 'var(--brand-050)' } : null} onMouseEnter={() => setActive(i)} onClick={() => go(r)}>
                 <div style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--surface-2)', display: 'grid', placeItems: 'center', color: 'var(--ink-2)' }}><Icon name="file-text" style={{ width: 14, height: 14 }} /></div>
                 <div style={{ flex: 1 }}><div style={{ fontWeight: 550, fontSize: 12.5 }}>{r.d.title}</div><div className="muted-2 mono" style={{ fontSize: 11 }}>{r.d.ref}</div></div>
                 <Badge tone="info">Doc</Badge>
               </div>
             ))}
+            <div style={{ padding: '6px 11px 3px', fontSize: 10.5, color: 'var(--ink-3)', display: 'flex', gap: 10 }}>
+              <span><kbd>↑</kbd> <kbd>↓</kbd> naviguer</span><span><kbd>↵</kbd> ouvrir</span><span><kbd>esc</kbd> fermer</span>
+            </div>
           </div>
         )}
       </div>
@@ -284,8 +385,8 @@ const Header = ({ crumbs = [], search, setSearch, navigate }) => {
         <Btn kind="primary" size="sm" icon="plus" onClick={() => openModal('member')}>Nouveau dossier</Btn>
         <IconBtn icon="folder-plus" title="Déposer un document" onClick={() => openModal('doc')} />
         <div style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
-          <IconBtn icon="bell" dot title="Notifications" onClick={() => setOpenNotif(s => !s)} />
-          {openNotif && <NotifPanel />}
+          <IconBtn icon="bell" dot={notifs.length > 0} title="Notifications" onClick={() => setOpenNotif(s => !s)} />
+          {openNotif && <NotifPanel notifs={notifs} navigate={navigate} onClose={() => setOpenNotif(false)} />}
         </div>
         <Avatar m={memberById('lb')} size={36} />
       </div>
@@ -293,17 +394,16 @@ const Header = ({ crumbs = [], search, setSearch, navigate }) => {
   );
 };
 
-const NotifPanel = () => (
+const NotifPanel = ({ notifs = [], navigate, onClose }) => (
   <div className="pop" style={{ top: 'calc(100% + 8px)', right: 0, width: 330, padding: 6 }}>
     <div style={{ padding: '8px 10px', display: 'flex', alignItems: 'center' }}>
-      <strong style={{ fontSize: 13 }}>Notifications</strong><span className="spacer"></span><span className="muted-2" style={{ fontSize: 11 }}>3 nouvelles</span>
+      <strong style={{ fontSize: 13 }}>Notifications</strong><span className="spacer"></span>
+      <span className="muted-2" style={{ fontSize: 11 }}>{notifs.length} active(s)</span>
     </div>
-    {[
-      { ic: 'folder-x', t: '3 dossiers membres incomplets', s: 'Pièces manquantes · à régulariser', tone: 'var(--danger)' },
-      { ic: 'calendar-clock', t: 'AG ordinaire dans 14 jours', s: 'Convocation à diffuser', tone: 'var(--warn)' },
-      { ic: 'file-signature', t: 'RI v.4 en attente de signature', s: 'Paul Delcourt', tone: 'var(--brand)' },
-    ].map((n, i) => (
-      <div key={i} style={{ padding: '9px 10px', display: 'flex', gap: 10, borderTop: '1px solid var(--border)' }}>
+    {notifs.length === 0 && <div style={{ padding: '14px 10px', fontSize: 12.5, color: 'var(--ink-3)' }}>Rien à signaler — tout est à jour ✅</div>}
+    {notifs.map((n, i) => (
+      <div key={i} className="pop__item" style={{ borderTop: '1px solid var(--border)', borderRadius: 0, alignItems: 'flex-start' }}
+        onClick={() => { navigate(n.go); onClose && onClose(); }}>
         <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--surface-2)', display: 'grid', placeItems: 'center', flex: '0 0 28px', color: n.tone }}><Icon name={n.ic} style={{ width: 14, height: 14 }} /></div>
         <div><div style={{ fontWeight: 550, fontSize: 12.5 }}>{n.t}</div><div className="muted-2" style={{ fontSize: 11.5 }}>{n.s}</div></div>
       </div>
@@ -395,14 +495,16 @@ const UploadPieceModal = ({ onClose, memberId }) => {
   const firstTodo = m ? (DOC_TYPES.find(d => m.docs[d.code] !== 'ok') || DOC_TYPES[0]).code : 'BA';
   const [code, setCode] = React.useState(firstTodo);
   const [status, setStatus] = React.useState('pending');
+  const [file, setFile] = React.useState(null);
   if (!m) return null;
-  const submit = () => { setDocStatus(memberId, code, status); onClose(); };
+  const submit = () => { setDocStatus(memberId, code, status, file); onClose(); };
   return (
     <Modal icon="upload" title="Déposer une pièce" sub={`Dossier de ${m.first} ${m.last}`} onClose={onClose} width={440}
       footer={<><Btn onClick={onClose}>Annuler</Btn><Btn kind="primary" icon="check" onClick={submit}>Enregistrer</Btn></>}>
       <Field label="Type de pièce">
         <SelectField value={code} onChange={setCode} options={DOC_TYPES.map(d => ({ value: d.code, label: `${d.label}${m.docs[d.code] === 'ok' ? ' (déjà présent)' : ''}` }))} />
       </Field>
+      <Field label="Fichier (optionnel)"><FileDrop value={file} onPick={setFile} /></Field>
       <Field label="État de la pièce">
         <SelectField value={status} onChange={setStatus} options={[{ value: 'pending', label: 'Déposée — en attente de validation' }, { value: 'ok', label: 'Validée — présente et conforme' }]} />
       </Field>
@@ -412,14 +514,24 @@ const UploadPieceModal = ({ onClose, memberId }) => {
 };
 
 const NewDocModal = ({ onClose, author }) => {
-  const [f, setF] = React.useState({ title: '', cat: 'cr', format: 'PDF', security: 'Interne', status: 'pending', pages: '', tags: '', author: author || 'lb' });
+  const [f, setF] = React.useState({ title: '', cat: 'cr', format: 'PDF', security: 'Interne', status: 'pending', pages: '', tags: '', author: author || 'lb', file: null });
   const set = (k) => (v) => setF(s => ({ ...s, [k]: v }));
   const valid = f.title.trim();
-  const submit = () => { if (!valid) return; addGedDoc(f); onClose(); };
+  const submit = () => {
+    if (!valid) return;
+    const ext = f.file ? (f.file.name.split('.').pop() || '').toUpperCase() : f.format;
+    addGedDoc({ ...f, format: ext || f.format, size: f.file ? humanSize(f.file.size) : '—' });
+    onClose();
+  };
+  const pickFile = (file) => setF(s => ({
+    ...s, file,
+    title: s.title || (file ? file.name.replace(/\.[^.]+$/, '') : s.title),
+  }));
   const catOptions = GED_CATS.filter(c => c.id !== 'all').map(c => ({ value: c.id, label: c.label }));
   return (
     <Modal icon="upload" title="Déposer un document" sub="Ajout à la GED — stockage cloud chiffré, accès tracé" onClose={onClose}
       footer={<><Btn onClick={onClose}>Annuler</Btn><Btn kind="primary" icon="check" onClick={submit}>Déposer</Btn></>}>
+      <Field label="Fichier (optionnel)"><FileDrop value={f.file} onPick={pickFile} /></Field>
       <Field label="Titre du document" required><TextField value={f.title} onChange={set('title')} placeholder="CR Bureau — 5 mai 2026" autoFocus /></Field>
       <div className="form-row">
         <Field label="Catégorie" half><SelectField value={f.cat} onChange={set('cat')} options={catOptions} /></Field>
@@ -502,6 +614,94 @@ const GenerateDocModal = ({ onClose, memberId }) => {
   );
 };
 
+// Parse un CSV simple (séparateur ; ou ,) → tableau d'objets selon l'en-tête
+const parseMembersCSV = (text) => {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) return [];
+  const sep = lines[0].includes(';') ? ';' : ',';
+  const norm = (s) => s.trim().toLowerCase().replace(/\s+/g, '');
+  const head = lines[0].replace(/^﻿/, '').split(sep).map(norm);
+  const map = { prénom: 'first', prenom: 'first', nom: 'last', email: 'email', 'e-mail': 'email', téléphone: 'phone', telephone: 'phone', tel: 'phone', pôle: 'pole', pole: 'pole', rôle: 'role', role: 'role', année: 'year', annee: 'year', promo: 'promo', promotion: 'promo', statut: 'status', ville: 'city' };
+  return lines.slice(1).map(line => {
+    const cells = line.split(sep);
+    const o = {};
+    head.forEach((h, i) => { const k = map[h]; if (k) o[k] = (cells[i] || '').trim(); });
+    return o;
+  });
+};
+
+const ImportMembersModal = ({ onClose }) => {
+  const [rows, setRows] = React.useState([]);
+  const [err, setErr] = React.useState('');
+  const onFile = async (file) => {
+    if (!file) { setRows([]); return; }
+    try {
+      const text = await file.text();
+      const parsed = parseMembersCSV(text).filter(r => r.first && r.last);
+      if (!parsed.length) { setErr('Aucune ligne valide. Vérifiez les colonnes « Prénom » et « Nom ».'); setRows([]); return; }
+      setErr(''); setRows(parsed);
+    } catch (e) { setErr('Lecture du fichier impossible.'); }
+  };
+  const submit = () => { if (rows.length) addMembersBatch(rows); onClose(); };
+  return (
+    <Modal icon="upload" title="Importer des membres" sub="Fichier CSV — crée plusieurs dossiers d'un coup" onClose={onClose}
+      footer={<><Btn onClick={onClose}>Annuler</Btn><Btn kind="primary" icon="user-plus" onClick={submit} >Importer {rows.length ? `(${rows.length})` : ''}</Btn></>}>
+      <div className="form-hint" style={{ display: 'block' }}>
+        Colonnes reconnues : <strong>Prénom; Nom; Email; Téléphone; Pôle; Rôle; Année; Promo; Statut; Ville</strong>.
+        <br />Astuce : exporte d'abord l'annuaire pour obtenir le bon format, puis réimporte.
+      </div>
+      <Field label="Fichier CSV">
+        <input className="input" type="file" accept=".csv,text/csv" onChange={(e) => onFile(e.target.files[0])} style={{ padding: 8 }} />
+      </Field>
+      {err && <div className="form-hint" style={{ color: '#B23A33', background: 'var(--danger-bg)', borderColor: 'var(--danger-bg)' }}><Icon name="alert-triangle" style={{ width: 13, height: 13 }} />{err}</div>}
+      {rows.length > 0 && (
+        <div className="form-hint" style={{ display: 'block' }}>
+          <strong>{rows.length}</strong> membre(s) prêts à l'import :
+          <div style={{ marginTop: 6, maxHeight: 120, overflowY: 'auto', fontSize: 12 }}>
+            {rows.slice(0, 8).map((r, i) => <div key={i}>· {r.first} {r.last} {r.pole ? `— ${r.pole}` : ''}</div>)}
+            {rows.length > 8 && <div className="muted-2">… et {rows.length - 8} autres</div>}
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+};
+
+const AddMandateModal = ({ onClose, memberId }) => {
+  const m = memberById(memberId);
+  const [f, setF] = React.useState({ role: '', period: '', current: 'true' });
+  const set = (k) => (v) => setF(s => ({ ...s, [k]: v }));
+  if (!m) return null;
+  const valid = f.role.trim() && f.period.trim();
+  const submit = () => { if (!valid) return; addMandate(memberId, { role: f.role, period: f.period, current: f.current === 'true' }); onClose(); };
+  return (
+    <Modal icon="milestone" title="Ajouter un mandat" sub={`Parcours de ${m.first} ${m.last}`} onClose={onClose} width={440}
+      footer={<><Btn onClick={onClose}>Annuler</Btn><Btn kind="primary" icon="check" onClick={submit}>Ajouter</Btn></>}>
+      <Field label="Rôle / fonction" required><TextField value={f.role} onChange={set('role')} placeholder="VP Communication" autoFocus /></Field>
+      <Field label="Période" required><TextField value={f.period} onChange={set('period')} placeholder="Sept. 2025 → en cours" /></Field>
+      <Field label="Mandat en cours ?"><SelectField value={f.current} onChange={set('current')} options={[{ value: 'true', label: 'Oui — mandat actuel' }, { value: 'false', label: 'Non — mandat passé' }]} /></Field>
+    </Modal>
+  );
+};
+
+const AddDeadlineModal = ({ onClose }) => {
+  const [f, setF] = React.useState({ title: '', date: '', kind: 'AG', sub: '' });
+  const set = (k) => (v) => setF(s => ({ ...s, [k]: v }));
+  const valid = f.title.trim() && f.date;
+  const submit = () => { if (!valid) return; addDeadline(f); onClose(); };
+  return (
+    <Modal icon="calendar-plus" title="Ajouter une échéance" sub="Calendrier réglementaire · J−X calculé automatiquement" onClose={onClose} width={460}
+      footer={<><Btn onClick={onClose}>Annuler</Btn><Btn kind="primary" icon="check" onClick={submit}>Ajouter</Btn></>}>
+      <Field label="Intitulé" required><TextField value={f.title} onChange={set('title')} placeholder="Renouvellement assurance RC" autoFocus /></Field>
+      <div className="form-row">
+        <Field label="Date" required half><TextField value={f.date} onChange={set('date')} type="date" /></Field>
+        <Field label="Type" half><SelectField value={f.kind} onChange={set('kind')} options={['AG','Assurance','Compta','Mandat','Préfecture','Autre'].map(k => ({ value: k, label: k }))} /></Field>
+      </div>
+      <Field label="Détail"><TextField value={f.sub} onChange={set('sub')} placeholder="Allianz · contrat FR-208441" /></Field>
+    </Modal>
+  );
+};
+
 const ConfirmModal = ({ onClose, title, message, confirmLabel = 'Confirmer', danger, onConfirm }) => (
   <Modal icon={danger ? 'trash-2' : 'help-circle'} title={title} onClose={onClose} width={420}
     footer={<><Btn onClick={onClose}>Annuler</Btn>
@@ -527,8 +727,11 @@ const ModalHost = ({ navigate }) => {
   if (modal.type === 'doc')        return <NewDocModal onClose={close} {...p} />;
   if (modal.type === 'piece')      return <UploadPieceModal onClose={close} {...p} />;
   if (modal.type === 'generate')   return <GenerateDocModal onClose={close} {...p} />;
+  if (modal.type === 'import')     return <ImportMembersModal onClose={close} {...p} />;
+  if (modal.type === 'mandate')    return <AddMandateModal onClose={close} {...p} />;
+  if (modal.type === 'deadline')   return <AddDeadlineModal onClose={close} {...p} />;
   if (modal.type === 'confirm')    return <ConfirmModal onClose={close} {...p} />;
   return null;
 };
 
-Object.assign(window, { cls, useIcons, useStore, openModal, downloadBlob, toCSV, exportMembersCSV, exportDocsCSV, Icon, Avatar, Badge, Btn, IconBtn, Card, Empty, Ring, Bar, Sidebar, Header, Modal, Field, TextField, SelectField, ModalHost });
+Object.assign(window, { cls, useIcons, useStore, openModal, downloadBlob, toCSV, exportMembersCSV, exportDocsCSV, humanSize, FileDrop, FilePreview, Icon, Avatar, Badge, Btn, IconBtn, Card, Empty, Ring, Bar, Sidebar, Header, Modal, Field, TextField, SelectField, ModalHost });

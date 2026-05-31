@@ -6,23 +6,23 @@ const ScreenDocuments = ({ navigate }) => {
   const [sort, setSort] = React.useState('date');
   const [selId, setSelId] = React.useState('g1');
 
-  const filtered = React.useMemo(() => {
-    let xs = DOCS.slice();
-    if (cat !== 'all') xs = xs.filter(d => d.cat === cat);
-    if (q.trim()) {
-      const qq = q.toLowerCase();
-      xs = xs.filter(d => d.title.toLowerCase().includes(qq) || d.ref.toLowerCase().includes(qq) || d.tags.some(t => t.includes(qq)));
-    }
-    xs.sort((a, b) => sort === 'date' ? b.dateAbs.localeCompare(a.dateAbs) : a.title.localeCompare(b.title));
-    return xs;
-  }, [cat, q, sort, DOCS.length]);
+  let filtered = DOCS.slice();
+  if (cat === 'fav') filtered = filtered.filter(d => d.fav);
+  else if (cat === 'tosign') filtered = filtered.filter(d => d.status === 'pending');
+  else if (cat !== 'all') filtered = filtered.filter(d => d.cat === cat);
+  if (q.trim()) {
+    const qq = q.toLowerCase();
+    filtered = filtered.filter(d => d.title.toLowerCase().includes(qq) || d.ref.toLowerCase().includes(qq) || (d.tags || []).some(t => t.includes(qq)));
+  }
+  filtered.sort((a, b) => sort === 'date' ? b.dateAbs.localeCompare(a.dateAbs) : a.title.localeCompare(b.title));
 
   React.useEffect(() => {
     if (filtered.length && !filtered.find(d => d.id === selId)) setSelId(filtered[0].id);
   }, [filtered]);
 
   const sel = DOCS.find(d => d.id === selId) || filtered[0];
-  const catObj = GED_CATS.find(c => c.id === cat);
+  const catLabel = cat === 'fav' ? 'les favoris' : cat === 'tosign' ? 'les documents à signer'
+    : (GED_CATS.find(c => c.id === cat) || {}).label ? GED_CATS.find(c => c.id === cat).label.toLowerCase() : 'tous les documents';
 
   const statusBadge = { signed: { tone: 'ok', k: 'Signé' }, pending: { tone: 'warn', k: 'À signer' }, archived: { tone: 'info', k: 'Archivé' } };
   const docIcon = (d) => d.status === 'pending' ? 'file-clock' : ({ pvag: 'gavel', cr: 'clipboard-list', ri: 'book-open-text', statuts: 'scroll-text', pref: 'building-2', compta: 'receipt', ba: 'file-badge', contrats: 'file-signature' }[d.cat] || 'file-text');
@@ -56,11 +56,13 @@ const ScreenDocuments = ({ navigate }) => {
             </div>
           ))}
           <div style={{ height: 1, background: 'var(--border)', margin: '8px' }}></div>
-          <div className="nav-item" style={{ color: 'var(--warn)' }} onClick={() => setCat('all')}>
+          <div className="nav-item" onClick={() => setCat('tosign')}
+            style={{ color: cat === 'tosign' ? 'var(--brand-700)' : 'var(--warn)', background: cat === 'tosign' ? 'var(--brand-050)' : 'transparent', fontWeight: cat === 'tosign' ? 600 : 450 }}>
             <Icon name="file-clock" /><span style={{ flex: 1 }}>À signer</span>
             <span style={{ fontSize: 11 }}>{DOCS.filter(d => d.status === 'pending').length}</span>
           </div>
-          <div className="nav-item" style={{ color: 'var(--ink-2)' }}>
+          <div className="nav-item" onClick={() => setCat('fav')}
+            style={{ color: cat === 'fav' ? 'var(--brand-700)' : 'var(--ink-2)', background: cat === 'fav' ? 'var(--brand-050)' : 'transparent', fontWeight: cat === 'fav' ? 600 : 450 }}>
             <Icon name="star" /><span style={{ flex: 1 }}>Favoris</span><span style={{ fontSize: 11 }}>{DOCS.filter(d => d.fav).length}</span>
           </div>
         </aside>
@@ -69,7 +71,7 @@ const ScreenDocuments = ({ navigate }) => {
         <div className="card" style={{ padding: 0, overflow: 'hidden', alignSelf: 'start' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 14px', borderBottom: '1px solid var(--border)' }}>
             <div className="search" style={{ margin: 0, flex: 1, maxWidth: 'none' }}>
-              <Icon name="search" /><input placeholder={`Rechercher dans ${catObj?.label.toLowerCase()}…`} value={q} onChange={(e) => setQ(e.target.value)} />
+              <Icon name="search" /><input placeholder={`Rechercher dans ${catLabel}…`} value={q} onChange={(e) => setQ(e.target.value)} />
             </div>
             <Badge tone="brand">{filtered.length}</Badge>
             <Btn kind="ghost" size="sm" icon="arrow-down-up" onClick={() => setSort(s => s === 'date' ? 'title' : 'date')}>{sort === 'date' ? 'Date' : 'Titre'}</Btn>
@@ -132,7 +134,12 @@ const DocPreview = ({ doc, statusBadge }) => {
         <div className="muted-2 mono" style={{ fontSize: 11, marginTop: 4 }}>{doc.ref} · {doc.date}</div>
       </div>
 
-      {/* doc mock */}
+      {/* aperçu réel si un fichier a été déposé, sinon mock */}
+      {doc.file ? (
+        <div style={{ margin: 16, border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+          <FilePreview file={doc.file} height={300} />
+        </div>
+      ) : (
       <div style={{ margin: 16, padding: 16, background: 'var(--surface-2)', border: '1px dashed var(--border-2)', borderRadius: 10, aspectRatio: '0.76', position: 'relative', overflow: 'hidden' }}>
         <span style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, color: 'var(--ink-2)', background: '#fff', padding: '2px 6px', borderRadius: 5, border: '1px solid var(--border)' }}>1 / {doc.pages}</span>
         <div style={{ fontSize: 9, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>JEECE · ECE Paris · Mandat {doc.mandat}</div>
@@ -150,6 +157,7 @@ const DocPreview = ({ doc, statusBadge }) => {
           <div style={{ position: 'absolute', bottom: 16, right: 16, width: 58, height: 58, border: '1.5px solid var(--warn)', borderRadius: 99, opacity: 0.55, transform: 'rotate(-12deg)', color: 'var(--warn)', display: 'grid', placeItems: 'center', fontSize: 8, fontWeight: 700, fontFamily: 'var(--mono)', textAlign: 'center', lineHeight: 1.2 }}>À<br />signer</div>
         )}
       </div>
+      )}
 
       {/* meta */}
       <div style={{ padding: '4px 16px 14px' }}>
@@ -188,8 +196,12 @@ const DocPreview = ({ doc, statusBadge }) => {
             onClick={() => openModal('confirm', { danger: true, title: 'Supprimer ce document ?', confirmLabel: 'Supprimer', message: `« ${doc.title} » sera retiré définitivement de la GED.`, onConfirm: () => deleteGedDoc(doc.id) })} />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <Btn icon="eye">Ouvrir</Btn>
-          <Btn kind="primary" icon="download">Télécharger</Btn>
+          <Btn icon="eye" onClick={() => doc.file && window.open(doc.file.dataURL, '_blank')} title={doc.file ? '' : 'Aucun fichier joint'}>Ouvrir</Btn>
+          <Btn kind="primary" icon="download" onClick={() => {
+            if (!doc.file) return;
+            const a = document.createElement('a'); a.href = doc.file.dataURL; a.download = doc.file.name;
+            document.body.appendChild(a); a.click(); a.remove();
+          }}>Télécharger</Btn>
         </div>
       </div>
     </aside>

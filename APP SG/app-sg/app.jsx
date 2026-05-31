@@ -16,7 +16,9 @@ const App = () => {
   React.useEffect(() => {
     const onHash = () => { setRoute(parseHash()); setSearch(''); window.scrollTo(0, 0); };
     window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
+    const onQuota = () => alert("Stockage local plein : le dernier fichier n'a pas pu être sauvegardé.\nUtilisez des fichiers plus légers (max 1,5 Mo) ou videz d'anciennes données.");
+    window.addEventListener('sg:quota', onQuota);
+    return () => { window.removeEventListener('hashchange', onHash); window.removeEventListener('sg:quota', onQuota); };
   }, []);
   const navigate = (to) => { location.hash = `#/${to}`; };
 

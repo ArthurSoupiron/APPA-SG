@@ -110,19 +110,22 @@ const ScreenDashboard = ({ navigate }) => {
           <div className="spacer"></div>
           <Btn kind="ghost" size="sm" icon="calendar">Agenda</Btn>
         </>} noBody>
-          {DEADLINES.map((d, i) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 12, alignItems: 'center', padding: '11px 17px', borderBottom: i < DEADLINES.length - 1 ? '1px solid var(--border)' : 'none' }}>
-              <div style={{ width: 46, textAlign: 'center', border: '1px solid var(--border)', borderRadius: 9, padding: '6px 2px', background: d.tone === 'warn' ? 'var(--warn-bg)' : 'var(--surface-2)' }}>
-                <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1, color: d.tone === 'warn' ? '#9A6212' : 'var(--ink)' }}>{d.day}</div>
-                <div style={{ fontSize: 9.5, color: 'var(--ink-3)', textTransform: 'uppercase', marginTop: 2 }}>{d.mo}</div>
+          {DEADLINES.map((d, i) => {
+            const info = deadlineInfo(d);
+            return (
+            <div key={d.id || i} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 12, alignItems: 'center', padding: '11px 17px', borderBottom: i < DEADLINES.length - 1 ? '1px solid var(--border)' : 'none' }}>
+              <div style={{ width: 46, textAlign: 'center', border: '1px solid var(--border)', borderRadius: 9, padding: '6px 2px', background: info.tone === 'warn' ? 'var(--warn-bg)' : 'var(--surface-2)' }}>
+                <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1, color: info.tone === 'warn' ? '#9A6212' : 'var(--ink)' }}>{info.day}</div>
+                <div style={{ fontSize: 9.5, color: 'var(--ink-3)', textTransform: 'uppercase', marginTop: 2 }}>{info.mo}</div>
               </div>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 550 }}>{d.title}</div>
                 <div className="muted-2" style={{ fontSize: 11 }}>{d.sub}</div>
               </div>
-              <Badge tone={d.tone === 'warn' ? 'warn' : d.tone === 'info' ? 'info' : 'neutral'}>{d.delta}</Badge>
+              <Badge tone={info.tone === 'warn' ? 'warn' : info.tone === 'info' ? 'info' : info.tone === 'danger' ? 'danger' : 'neutral'}>{info.delta}</Badge>
             </div>
-          ))}
+            );
+          })}
         </Card>
       </div>
 

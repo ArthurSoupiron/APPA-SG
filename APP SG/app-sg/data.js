@@ -66,13 +66,35 @@ const dossierStats = (m) => {
   return { ok, total: req.length, pct, missing: req.filter(d => m.docs[d.code] === 'missing').length, pending: req.filter(d => m.docs[d.code] === 'pending').length };
 };
 
-// Échéances légales / conformité
+// Échéances légales / conformité — basées sur une date ISO (J−X calculé en direct)
 const DEADLINES = [
-  { day: '14', mo: 'juin', title: 'Assemblée Générale ordinaire 2026', sub: 'Convocation à diffuser avant le 31 mai', delta: 'J−14', tone: 'warn', kind: 'AG' },
-  { day: '22', mo: 'juin', title: 'Renouvellement assurance RC', sub: 'Allianz · contrat FR-208441', delta: 'J−22', tone: 'warn', kind: 'Assurance' },
-  { day: '30', mo: 'juin', title: 'Dépôt des comptes annuels 2025', sub: 'JOAFE · obligation légale', delta: 'J−30', tone: 'info', kind: 'Compta' },
-  { day: '15', mo: 'juil', title: 'Passation de mandat 2025–2026', sub: '14 membres sortants · archivage dossiers', delta: 'J−45', tone: 'info', kind: 'Mandat' },
-  { day: '02', mo: 'août', title: 'Déclaration nouveaux statuts', sub: 'Préfecture du 75 · suite vote AG', delta: 'J−63', tone: 'neutral', kind: 'Préfecture' },
+  { id: 'd1', date: '2026-06-14', title: 'Assemblée Générale ordinaire 2026', sub: 'Convocation à diffuser avant le 31 mai', kind: 'AG' },
+  { id: 'd2', date: '2026-06-22', title: 'Renouvellement assurance RC', sub: 'Allianz · contrat FR-208441', kind: 'Assurance' },
+  { id: 'd3', date: '2026-06-30', title: 'Dépôt des comptes annuels 2025', sub: 'JOAFE · obligation légale', kind: 'Compta' },
+  { id: 'd4', date: '2026-07-15', title: 'Passation de mandat 2025–2026', sub: '14 membres sortants · archivage dossiers', kind: 'Mandat' },
+  { id: 'd5', date: '2026-08-02', title: 'Déclaration nouveaux statuts', sub: 'Préfecture du 75 · suite vote AG', kind: 'Préfecture' },
+];
+
+const MONTHS_FR = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+
+// calcule jour/mois affichés + libellé J−X + tonalité depuis la date du jour
+const deadlineInfo = (d) => {
+  const dt = new Date(d.date + 'T00:00:00');
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const days = Math.round((dt - today) / 86400000);
+  const delta = days === 0 ? "Aujourd'hui" : days > 0 ? `J−${days}` : `J+${-days}`;
+  const tone = days < 0 ? 'danger' : days <= 21 ? 'warn' : days <= 45 ? 'info' : 'neutral';
+  return { day: String(dt.getDate()).padStart(2, '0'), mo: MONTHS_FR[dt.getMonth()], delta, tone, days };
+};
+
+// Checklist de conformité (état persisté ; le point « dossiers complets » est calculé à part)
+const CONFORMITE = [
+  { id: 'c1', k: 'Statuts à jour & déposés', s: 'Version consolidée 2026 · Préfecture', state: 'ok', ref: 'STAT-2026-V4' },
+  { id: 'c2', k: "PV de la dernière AG signé", s: 'AG Extraordinaire du 28 avril 2026', state: 'ok', ref: 'PV-AG-2026-002' },
+  { id: 'c3', k: 'Règlement intérieur validé', s: 'v.4 en attente de signature Présidence', state: 'pending', ref: 'RI-2026-V4' },
+  { id: 'c4', k: 'Déclaration changement de bureau', s: 'Cerfa 13971 déposé · 20 sept 2025', state: 'ok', ref: 'PREF-2025-014' },
+  { id: 'c5', k: 'Assurance RC en cours de validité', s: 'Allianz · renouvellement avant le 22 juin', state: 'pending', ref: 'ASSU-2025-002' },
+  { id: 'c6', k: 'Comptes annuels 2025 déposés', s: 'JOAFE · échéance 30 juin 2026', state: 'todo', ref: 'COMPTA-2025' },
 ];
 
 // Documents GED
@@ -109,6 +131,13 @@ const STATUS_LABEL = {
 
 const memberById = (id) => MEMBERS.find(m => m.id === id);
 
+// normalise un statut (code interne ou libellé FR) vers un code valide
+const normStatus = (s) => {
+  const v = String(s || '').toLowerCase().trim();
+  if (['active', 'pending', 'alumni', 'inactive'].includes(v)) return v;
+  return { actif: 'active', postulant: 'pending', alumni: 'alumni', inactif: 'inactive' }[v] || 'active';
+};
+
 // ===========================================================================
 //  Store réactif + persistance (localStorage)
 //  Les écrans lisent directement MEMBERS / DOCS / ACTIVITY (globals). On mute
@@ -120,8 +149,11 @@ const SG_STORE_KEY = 'jeece-sg-store-v1';
 
 const sgPersist = () => {
   try {
-    localStorage.setItem(SG_STORE_KEY, JSON.stringify({ MEMBERS, DOCS, ACTIVITY }));
-  } catch (e) { /* quota / mode privé : on ignore */ }
+    localStorage.setItem(SG_STORE_KEY, JSON.stringify({ MEMBERS, DOCS, ACTIVITY, DEADLINES, CONFORMITE }));
+  } catch (e) {
+    // quota dépassé (souvent à cause de fichiers uploadés lourds) : on prévient
+    if (e && e.name === 'QuotaExceededError') window.dispatchEvent(new Event('sg:quota'));
+  }
 };
 
 const sgHydrate = () => {
@@ -129,9 +161,11 @@ const sgHydrate = () => {
     const raw = localStorage.getItem(SG_STORE_KEY);
     if (!raw) return;
     const saved = JSON.parse(raw);
-    if (Array.isArray(saved.MEMBERS))  MEMBERS.splice(0, MEMBERS.length, ...saved.MEMBERS);
-    if (Array.isArray(saved.DOCS))     DOCS.splice(0, DOCS.length, ...saved.DOCS);
-    if (Array.isArray(saved.ACTIVITY)) ACTIVITY.splice(0, ACTIVITY.length, ...saved.ACTIVITY);
+    if (Array.isArray(saved.MEMBERS))    MEMBERS.splice(0, MEMBERS.length, ...saved.MEMBERS);
+    if (Array.isArray(saved.DOCS))       DOCS.splice(0, DOCS.length, ...saved.DOCS);
+    if (Array.isArray(saved.ACTIVITY))   ACTIVITY.splice(0, ACTIVITY.length, ...saved.ACTIVITY);
+    if (Array.isArray(saved.DEADLINES))  DEADLINES.splice(0, DEADLINES.length, ...saved.DEADLINES);
+    if (Array.isArray(saved.CONFORMITE)) CONFORMITE.splice(0, CONFORMITE.length, ...saved.CONFORMITE);
   } catch (e) { /* données corrompues : on repart du seed */ }
 };
 
@@ -149,12 +183,12 @@ const logActivity = (entry) => {
 
 // ---- Mutations métier ----------------------------------------------------
 
-// crée un dossier membre vide (toutes pièces manquantes) et le persiste
-const addMember = (data) => {
+// construit + insère un dossier membre vide (sans commit)
+const _createMember = (data) => {
   const first = (data.first || '').trim();
   const last  = (data.last || '').trim();
   const initials = ((first[0] || '?') + (last[0] || '')).toUpperCase();
-  let id = (initials.toLowerCase() || 'm') ;
+  let id = (initials.toLowerCase() || 'm');
   while (MEMBERS.some(m => m.id === id)) id += Math.floor(Math.random() * 10);
   const m = {
     id, first, last, initials,
@@ -163,24 +197,44 @@ const addMember = (data) => {
     pole: data.pole || 'SI',
     promo: Number(data.promo) || new Date().getFullYear() + 2,
     year: data.year || 'L1',
-    status: data.status || 'active',
+    status: normStatus(data.status),
     email: data.email || `${first}.${last}`.toLowerCase().replace(/\s+/g, '') + '@jeece.fr',
     phone: data.phone || '—',
     joined: data.joined || new Date().toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }),
     city: data.city || '—',
     docs: { BA: 'missing', CHARTE: 'missing', CE: 'missing', RIB: 'missing', RC: 'missing', CV: 'missing' },
+    files: {},
   };
   MEMBERS.push(m);
-  logActivity({ who: 'lb', action: 'a créé le dossier de', target: `${first} ${last}`, ctx: 'nouveau membre', icon: 'user-plus', tone: 'brand' });
+  return m;
+};
+
+// crée un dossier membre et le persiste
+const addMember = (data) => {
+  const m = _createMember(data);
+  logActivity({ who: 'lb', action: 'a créé le dossier de', target: `${m.first} ${m.last}`, ctx: 'nouveau membre', icon: 'user-plus', tone: 'brand' });
   sgCommit();
   return m;
 };
 
+// crée plusieurs dossiers d'un coup (import CSV) — un seul commit
+const addMembersBatch = (list) => {
+  const created = (list || [])
+    .filter(d => (d.first || '').trim() && (d.last || '').trim())
+    .map(_createMember);
+  if (!created.length) return [];
+  logActivity({ who: 'lb', action: 'a importé', target: `${created.length} dossier(s) membre`, ctx: 'import CSV', icon: 'upload', tone: 'info' });
+  sgCommit();
+  return created;
+};
+
 // change l'état d'une pièce d'un dossier : 'missing' → 'pending' → 'ok'
-const setDocStatus = (memberId, code, status) => {
+// file (optionnel) : { name, type, dataURL } stocké dans m.files[code]
+const setDocStatus = (memberId, code, status, file) => {
   const m = memberById(memberId);
   if (!m) return;
   m.docs[code] = status;
+  if (file) { m.files = m.files || {}; m.files[code] = file; }
   const dt = (DOC_TYPES.find(d => d.code === code) || {}).label || code;
   const verb = status === 'ok' ? 'a validé' : status === 'pending' ? 'a déposé' : 'a retiré';
   logActivity({ who: 'lb', action: verb, target: `${dt} · ${m.first} ${m.last}`, ctx: 'dossier membre', icon: status === 'ok' ? 'check-circle' : 'upload', tone: status === 'ok' ? 'brand' : 'info' });
@@ -207,8 +261,10 @@ const addGedDoc = (data) => {
     signers: [],
     date: now.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }),
     dateAbs: now.toISOString().slice(0, 10),
-    tags: (data.tags || '').split(',').map(t => t.trim()).filter(Boolean),
+    tags: typeof data.tags === 'string' ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : (data.tags || []),
     security: data.security || 'Interne',
+    fav: false,
+    file: data.file || null, // { name, type, dataURL }
   };
   DOCS.unshift(doc);
   logActivity({ who: doc.author, action: 'a déposé', target: doc.title, ctx: `catégorie ${(GED_CATS.find(c => c.id === cat) || {}).label || cat}`, icon: 'upload', tone: 'info' });
@@ -264,8 +320,54 @@ const deleteGedDoc = (id) => {
   sgCommit();
 };
 
+// ---- Mandats (parcours) --------------------------------------------------
+const addMandate = (memberId, { role, period, current }) => {
+  const m = memberById(memberId);
+  if (!m) return;
+  if (!m.mandates) m.mandates = [{ role: m.role, period: `Depuis ${m.joined}`, current: true }];
+  if (current) m.mandates.forEach(x => { x.current = false; });
+  m.mandates.unshift({ role, period, current: !!current });
+  logActivity({ who: 'lb', action: 'a ajouté un mandat à', target: `${m.first} ${m.last}`, ctx: role, icon: 'milestone', tone: 'info' });
+  sgCommit();
+};
+const endMandate = (memberId, idx) => {
+  const m = memberById(memberId);
+  if (!m || !m.mandates || !m.mandates[idx]) return;
+  m.mandates[idx].current = false;
+  sgCommit();
+};
+const deleteMandate = (memberId, idx) => {
+  const m = memberById(memberId);
+  if (!m || !m.mandates) return;
+  m.mandates.splice(idx, 1);
+  sgCommit();
+};
+
+// ---- Conformité ----------------------------------------------------------
+// fait avancer un point : 'todo' → 'pending' → 'ok'
+const advanceCheck = (id) => {
+  const c = CONFORMITE.find(x => x.id === id);
+  if (!c) return;
+  c.state = c.state === 'todo' ? 'pending' : 'ok';
+  logActivity({ who: 'lb', action: c.state === 'ok' ? 'a validé' : 'a fait avancer', target: c.k, ctx: 'conformité', icon: 'shield-check', tone: 'brand' });
+  sgCommit();
+};
+
+// ---- Échéances -----------------------------------------------------------
+const addDeadline = (data) => {
+  DEADLINES.push({ id: 'd' + Date.now(), date: data.date, title: (data.title || 'Échéance').trim(), sub: data.sub || '', kind: data.kind || 'Autre' });
+  DEADLINES.sort((a, b) => a.date.localeCompare(b.date));
+  logActivity({ who: 'lb', action: 'a ajouté une échéance', target: data.title, ctx: 'calendrier réglementaire', icon: 'calendar-plus', tone: 'info' });
+  sgCommit();
+};
+const deleteDeadline = (id) => {
+  const i = DEADLINES.findIndex(d => d.id === id);
+  if (i >= 0) { DEADLINES.splice(i, 1); sgCommit(); }
+};
+
 // hydrate dès le chargement du module (avant le 1er render)
 sgHydrate();
+DEADLINES.sort((a, b) => a.date.localeCompare(b.date));
 
 // global rollups
 const rollups = () => {
@@ -277,8 +379,9 @@ const rollups = () => {
 };
 
 Object.assign(window, {
-  DOC_TYPES, GED_CATS, MEMBERS, DEADLINES, DOCS, ACTIVITY, STATUS_LABEL,
-  dossierStats, memberById, rollups,
-  sgCommit, sgReset, logActivity, addMember, setDocStatus, addGedDoc,
+  DOC_TYPES, GED_CATS, MEMBERS, DEADLINES, DOCS, ACTIVITY, STATUS_LABEL, CONFORMITE,
+  dossierStats, memberById, rollups, deadlineInfo,
+  sgCommit, sgReset, logActivity, addMember, addMembersBatch, setDocStatus, addGedDoc,
   updateMember, deleteMember, setGedStatus, toggleGedFav, deleteGedDoc,
+  addMandate, endMandate, deleteMandate, advanceCheck, addDeadline, deleteDeadline,
 });
