@@ -14,8 +14,30 @@ const ScreenDashboard = ({ navigate }) => {
   const distMax = Math.max(1, ...dist.map(d => d.v));
   const toneColor = { brand: 'var(--brand)', info: 'var(--info)', lime: 'var(--lime)', violet: 'var(--violet)', warn: 'var(--warn)', neutral: 'var(--ink-3)' };
 
+  // rappels : échéances dépassées ou dans moins de 14 jours
+  const reminders = DEADLINES.map(d => ({ d, info: deadlineInfo(d) }))
+    .filter(x => x.info.days <= 14)
+    .sort((a, b) => a.info.days - b.info.days);
+
   return (
     <section className="page">
+      {/* Bannière de rappels d'échéances */}
+      {reminders.length > 0 && (
+        <div className="card" style={{ marginBottom: 14, padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 13, borderLeft: '3px solid var(--warn)', background: 'var(--warn-bg)' }}>
+          <Icon name="bell-ring" style={{ width: 20, height: 20, color: 'var(--warn)', flex: '0 0 20px' }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 600, fontSize: 13 }}>
+              {reminders.length} échéance(s) imminente(s)
+              {reminders.some(r => r.info.days < 0) && <span style={{ color: 'var(--danger)' }}> · dont {reminders.filter(r => r.info.days < 0).length} dépassée(s)</span>}
+            </div>
+            <div className="muted" style={{ fontSize: 11.5, marginTop: 2 }}>
+              Prochaine : {reminders[0].d.title} — <strong>{reminders[0].info.delta}</strong>
+            </div>
+          </div>
+          <Btn size="sm" icon="arrow-right" onClick={() => navigate('conformite')}>Voir tout</Btn>
+        </div>
+      )}
+
       {/* Hero */}
       <div style={{
         borderRadius: 18, padding: '22px 24px', marginBottom: 16, position: 'relative', overflow: 'hidden',

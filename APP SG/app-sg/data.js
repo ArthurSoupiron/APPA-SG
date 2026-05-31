@@ -375,6 +375,25 @@ const deleteDeadline = (id) => {
   if (i >= 0) { DEADLINES.splice(i, 1); sgCommit(); }
 };
 
+// ---- Notes / commentaires internes ---------------------------------------
+// cible : { kind: 'member'|'doc', id }. Stocke dans m.notes / d.notes
+const _noteTarget = (kind, id) => kind === 'member' ? memberById(id) : DOCS.find(d => d.id === id);
+const addNote = (kind, id, text) => {
+  const o = _noteTarget(kind, id);
+  const t = (text || '').trim();
+  if (!o || !t) return;
+  if (!o.notes) o.notes = [];
+  o.notes.unshift({ id: 'n' + Date.now(), who: 'lb', text: t, when: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) + ' · ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) });
+  notify('Note ajoutée', 'ok');
+  sgCommit();
+};
+const deleteNote = (kind, id, noteId) => {
+  const o = _noteTarget(kind, id);
+  if (!o || !o.notes) return;
+  const i = o.notes.findIndex(n => n.id === noteId);
+  if (i >= 0) { o.notes.splice(i, 1); sgCommit(); }
+};
+
 // ---- Paramètres : types de pièces & catégories GED -----------------------
 const addDocType = ({ code, label, icon, required }) => {
   const c = (code || '').trim().toUpperCase();
@@ -535,4 +554,5 @@ Object.assign(window, {
   addDocType, removeDocType, toggleDocRequired, addCat, removeCat,
   missingPieces, buildRelanceMailto, logRelance, deleteMembers, deleteGedDocs,
   statsByPole, statsByStatus, statsPieces, statsDocStatus, exportBackup, importBackup,
+  addNote, deleteNote,
 });

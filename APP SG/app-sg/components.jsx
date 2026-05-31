@@ -478,6 +478,35 @@ const NotifPanel = ({ notifs = [], navigate, onClose }) => (
   </div>
 );
 
+// ===== Panneau de notes / commentaires internes (réutilisable) =====
+const NotesPanel = ({ kind, id, notes = [] }) => {
+  const [text, setText] = React.useState('');
+  const submit = () => { if (!text.trim()) return; addNote(kind, id, text); setText(''); };
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: notes.length ? 14 : 0 }}>
+        <input className="input" placeholder="Ajouter une note interne…" value={text}
+          onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }} />
+        <Btn kind="primary" icon="send" onClick={submit}>Ajouter</Btn>
+      </div>
+      {notes.map((n, i) => {
+        const w = memberById(n.who);
+        return (
+          <div key={n.id} style={{ display: 'flex', gap: 10, padding: '11px 0', borderTop: i === 0 ? '1px solid var(--border)' : '1px solid var(--border)' }}>
+            {w && <Avatar m={w} size={28} />}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, lineHeight: 1.45 }}>{n.text}</div>
+              <div className="muted-2" style={{ fontSize: 11, marginTop: 3 }}>{w ? `${w.first} ${w.last}` : n.who} · {n.when}</div>
+            </div>
+            <IconBtn icon="trash-2" title="Supprimer la note" style={{ width: 28, height: 28 }} onClick={() => deleteNote(kind, id, n.id)} />
+          </div>
+        );
+      })}
+      {notes.length === 0 && <div className="muted-2" style={{ fontSize: 12.5, padding: '12px 0 2px' }}>Aucune note pour le moment.</div>}
+    </div>
+  );
+};
+
 // ===== Modale générique =====
 const Modal = ({ title, sub, icon, onClose, children, footer, width = 480 }) => {
   useIcons();
@@ -938,4 +967,4 @@ const ModalHost = ({ navigate }) => {
   return null;
 };
 
-Object.assign(window, { cls, useIcons, useStore, openModal, toast, doRelance, downloadBlob, toCSV, exportMembersCSV, exportDocsCSV, humanSize, FileDrop, FilePreview, Icon, Avatar, Badge, Btn, IconBtn, Card, Empty, Ring, Bar, Sidebar, Header, Modal, Field, TextField, SelectField, ModalHost, ToastHost, ThemeToggle, Login, isAuthed, setAuthed, Onboarding, shouldOnboard });
+Object.assign(window, { cls, useIcons, useStore, openModal, toast, doRelance, downloadBlob, toCSV, exportMembersCSV, exportDocsCSV, humanSize, FileDrop, FilePreview, Icon, Avatar, Badge, Btn, IconBtn, Card, Empty, Ring, Bar, Sidebar, Header, Modal, Field, TextField, SelectField, ModalHost, ToastHost, ThemeToggle, Login, isAuthed, setAuthed, Onboarding, shouldOnboard, NotesPanel });

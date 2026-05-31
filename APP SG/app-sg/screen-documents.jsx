@@ -201,6 +201,15 @@ const DocPreview = ({ doc, statusBadge }) => {
         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 8 }}>
           {doc.tags.map(t => <Badge key={t}>{t}</Badge>)}
         </div>
+
+        {/* notes internes du document */}
+        <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon name="message-square" style={{ width: 13, height: 13 }} />Notes internes
+            {(doc.notes || []).length > 0 && <Badge tone="brand">{doc.notes.length}</Badge>}
+          </div>
+          <NotesPanel kind="doc" id={doc.id} notes={doc.notes || []} />
+        </div>
       </div>
 
       <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>

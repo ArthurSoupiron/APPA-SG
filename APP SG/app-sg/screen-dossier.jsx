@@ -19,6 +19,7 @@ const ScreenDossier = ({ navigate, memberId }) => {
     { id: 'dossier', label: 'Dossier & pièces', icon: 'folder' },
     { id: 'identite', label: 'Identité', icon: 'user' },
     { id: 'parcours', label: 'Parcours', icon: 'milestone', count: mandates.length },
+    { id: 'notes', label: 'Notes', icon: 'message-square', count: (m.notes || []).length },
     { id: 'historique', label: 'Historique', icon: 'history', count: 24 },
   ];
 
@@ -226,6 +227,13 @@ const ScreenDossier = ({ navigate, memberId }) => {
               </div>
             ))}
           </div>
+        </Card>
+      )}
+
+      {/* NOTES tab */}
+      {tab === 'notes' && (
+        <Card title="Notes internes" sub="Commentaires partagés sur ce dossier · visibles par le Bureau">
+          <NotesPanel kind="member" id={m.id} notes={m.notes || []} />
         </Card>
       )}
 
