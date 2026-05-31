@@ -6,6 +6,19 @@ const useIcons = () => {
 };
 const Icon = ({ name, style, className }) => <i data-lucide={name} style={style} className={className}></i>;
 
+// S'abonne au store : re-render à chaque « sg:change » (mutation persistée).
+const useStore = () => {
+  const [, force] = React.useState(0);
+  React.useEffect(() => {
+    const h = () => force(v => v + 1);
+    window.addEventListener('sg:change', h);
+    return () => window.removeEventListener('sg:change', h);
+  }, []);
+};
+
+// Ouvre une modale globale, gérée par <ModalHost/> dans App.
+const openModal = (type, props = {}) => window.dispatchEvent(new CustomEvent('sg:modal', { detail: { type, props } }));
+
 const Avatar = ({ m, size = 34, av, initials }) => {
   const i = m?.initials || initials || '?';
   const a = m?.av || av || 'g1';
@@ -195,8 +208,8 @@ const Header = ({ crumbs = [], search, setSearch, navigate }) => {
       </div>
 
       <div className="header__actions">
-        <Btn kind="primary" size="sm" icon="plus">Nouveau dossier</Btn>
-        <IconBtn icon="folder-plus" title="Déposer un document" />
+        <Btn kind="primary" size="sm" icon="plus" onClick={() => openModal('member')}>Nouveau dossier</Btn>
+        <IconBtn icon="folder-plus" title="Déposer un document" onClick={() => openModal('doc')} />
         <div style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
           <IconBtn icon="bell" dot title="Notifications" onClick={() => setOpenNotif(s => !s)} />
           {openNotif && <NotifPanel />}
@@ -225,4 +238,146 @@ const NotifPanel = () => (
   </div>
 );
 
-Object.assign(window, { cls, useIcons, Icon, Avatar, Badge, Btn, IconBtn, Card, Empty, Ring, Bar, Sidebar, Header });
+// ===== Modale générique =====
+const Modal = ({ title, sub, icon, onClose, children, footer, width = 480 }) => {
+  useIcons();
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{ width }} onClick={(e) => e.stopPropagation()}>
+        <div className="modal__head">
+          {icon && <div className="modal__icon"><Icon name={icon} style={{ width: 18, height: 18 }} /></div>}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="modal__title">{title}</div>
+            {sub && <div className="modal__sub">{sub}</div>}
+          </div>
+          <IconBtn icon="x" onClick={onClose} title="Fermer" />
+        </div>
+        <div className="modal__body">{children}</div>
+        {footer && <div className="modal__foot">{footer}</div>}
+      </div>
+    </div>
+  );
+};
+
+// ===== Champs de formulaire =====
+const Field = ({ label, required, children, half }) => (
+  <label className="field" style={half ? { flex: '1 1 0', minWidth: 0 } : null}>
+    <span className="field__label">{label}{required && <span style={{ color: 'var(--danger)' }}> *</span>}</span>
+    {children}
+  </label>
+);
+const TextField = ({ value, onChange, ...rest }) => (
+  <input className="input" value={value} onChange={(e) => onChange(e.target.value)} {...rest} />
+);
+const SelectField = ({ value, onChange, options }) => (
+  <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
+    {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+  </select>
+);
+
+// ===== Modales métier =====
+const NewMemberModal = ({ onClose, navigate }) => {
+  const poles = Array.from(new Set(MEMBERS.map(m => m.pole)));
+  const [f, setF] = React.useState({ first: '', last: '', email: '', role: '', pole: poles[0] || 'SI', year: 'L1', status: 'active', phone: '', city: '' });
+  const set = (k) => (v) => setF(s => ({ ...s, [k]: v }));
+  const valid = f.first.trim() && f.last.trim();
+  const submit = () => {
+    if (!valid) return;
+    const m = addMember(f);
+    onClose();
+    if (navigate) navigate(`dossier/${m.id}`);
+  };
+  return (
+    <Modal icon="user-plus" title="Nouveau dossier membre" sub="Crée un dossier vide — les pièces seront à déposer ensuite" onClose={onClose}
+      footer={<><Btn onClick={onClose}>Annuler</Btn><Btn kind="primary" icon="check" onClick={submit} >Créer le dossier</Btn></>}>
+      <div className="form-row">
+        <Field label="Prénom" required half><TextField value={f.first} onChange={set('first')} placeholder="Léa" autoFocus /></Field>
+        <Field label="Nom" required half><TextField value={f.last} onChange={set('last')} placeholder="Bernard" /></Field>
+      </div>
+      <Field label="Email"><TextField value={f.email} onChange={set('email')} placeholder="auto : prenom.nom@jeece.fr" type="email" /></Field>
+      <div className="form-row">
+        <Field label="Rôle" half><TextField value={f.role} onChange={set('role')} placeholder="Chargé de mission" /></Field>
+        <Field label="Pôle" half><SelectField value={f.pole} onChange={set('pole')} options={poles.map(p => ({ value: p, label: p }))} /></Field>
+      </div>
+      <div className="form-row">
+        <Field label="Année" half><SelectField value={f.year} onChange={set('year')} options={['L1','L2','L3','M1','M2','Diplômé'].map(y => ({ value: y, label: y }))} /></Field>
+        <Field label="Statut" half><SelectField value={f.status} onChange={set('status')} options={[{value:'active',label:'Actif'},{value:'pending',label:'Postulant'},{value:'alumni',label:'Alumni'},{value:'inactive',label:'Inactif'}]} /></Field>
+      </div>
+      <div className="form-row">
+        <Field label="Téléphone" half><TextField value={f.phone} onChange={set('phone')} placeholder="+33 6 …" /></Field>
+        <Field label="Ville" half><TextField value={f.city} onChange={set('city')} placeholder="Paris 11e" /></Field>
+      </div>
+      {!valid && <div className="form-hint"><Icon name="info" style={{ width: 13, height: 13 }} />Prénom et nom sont requis.</div>}
+    </Modal>
+  );
+};
+
+const UploadPieceModal = ({ onClose, memberId }) => {
+  const m = memberById(memberId);
+  const firstTodo = m ? (DOC_TYPES.find(d => m.docs[d.code] !== 'ok') || DOC_TYPES[0]).code : 'BA';
+  const [code, setCode] = React.useState(firstTodo);
+  const [status, setStatus] = React.useState('pending');
+  if (!m) return null;
+  const submit = () => { setDocStatus(memberId, code, status); onClose(); };
+  return (
+    <Modal icon="upload" title="Déposer une pièce" sub={`Dossier de ${m.first} ${m.last}`} onClose={onClose} width={440}
+      footer={<><Btn onClick={onClose}>Annuler</Btn><Btn kind="primary" icon="check" onClick={submit}>Enregistrer</Btn></>}>
+      <Field label="Type de pièce">
+        <SelectField value={code} onChange={setCode} options={DOC_TYPES.map(d => ({ value: d.code, label: `${d.label}${m.docs[d.code] === 'ok' ? ' (déjà présent)' : ''}` }))} />
+      </Field>
+      <Field label="État de la pièce">
+        <SelectField value={status} onChange={setStatus} options={[{ value: 'pending', label: 'Déposée — en attente de validation' }, { value: 'ok', label: 'Validée — présente et conforme' }]} />
+      </Field>
+      <div className="form-hint"><Icon name="shield-check" style={{ width: 13, height: 13, color: 'var(--brand)' }} />Pièce stockée de façon chiffrée · accès tracé.</div>
+    </Modal>
+  );
+};
+
+const NewDocModal = ({ onClose, author }) => {
+  const [f, setF] = React.useState({ title: '', cat: 'cr', format: 'PDF', security: 'Interne', status: 'pending', pages: '', tags: '', author: author || 'lb' });
+  const set = (k) => (v) => setF(s => ({ ...s, [k]: v }));
+  const valid = f.title.trim();
+  const submit = () => { if (!valid) return; addGedDoc(f); onClose(); };
+  const catOptions = GED_CATS.filter(c => c.id !== 'all').map(c => ({ value: c.id, label: c.label }));
+  return (
+    <Modal icon="upload" title="Déposer un document" sub="Ajout à la GED — stockage cloud chiffré, accès tracé" onClose={onClose}
+      footer={<><Btn onClick={onClose}>Annuler</Btn><Btn kind="primary" icon="check" onClick={submit}>Déposer</Btn></>}>
+      <Field label="Titre du document" required><TextField value={f.title} onChange={set('title')} placeholder="CR Bureau — 5 mai 2026" autoFocus /></Field>
+      <div className="form-row">
+        <Field label="Catégorie" half><SelectField value={f.cat} onChange={set('cat')} options={catOptions} /></Field>
+        <Field label="Confidentialité" half><SelectField value={f.security} onChange={set('security')} options={['Public','Interne','Confidentiel'].map(s => ({ value: s, label: s }))} /></Field>
+      </div>
+      <div className="form-row">
+        <Field label="Format" half><SelectField value={f.format} onChange={set('format')} options={['PDF','DOCX','XLSX'].map(s => ({ value: s, label: s }))} /></Field>
+        <Field label="Pages" half><TextField value={f.pages} onChange={set('pages')} placeholder="4" type="number" min="1" /></Field>
+      </div>
+      <Field label="Statut"><SelectField value={f.status} onChange={set('status')} options={[{value:'pending',label:'À signer'},{value:'signed',label:'Signé'},{value:'archived',label:'Archivé'}]} /></Field>
+      <Field label="Tags (séparés par des virgules)"><TextField value={f.tags} onChange={set('tags')} placeholder="bureau, vote" /></Field>
+      {!valid && <div className="form-hint"><Icon name="info" style={{ width: 13, height: 13 }} />Le titre est requis.</div>}
+    </Modal>
+  );
+};
+
+// Hôte des modales : écoute « sg:modal » et affiche la bonne modale.
+const ModalHost = ({ navigate }) => {
+  const [modal, setModal] = React.useState(null);
+  React.useEffect(() => {
+    const onOpen = (e) => setModal(e.detail);
+    window.addEventListener('sg:modal', onOpen);
+    return () => window.removeEventListener('sg:modal', onOpen);
+  }, []);
+  if (!modal) return null;
+  const close = () => setModal(null);
+  const p = modal.props || {};
+  if (modal.type === 'member') return <NewMemberModal onClose={close} navigate={navigate} />;
+  if (modal.type === 'doc')    return <NewDocModal onClose={close} {...p} />;
+  if (modal.type === 'piece')  return <UploadPieceModal onClose={close} {...p} />;
+  return null;
+};
+
+Object.assign(window, { cls, useIcons, useStore, openModal, Icon, Avatar, Badge, Btn, IconBtn, Card, Empty, Ring, Bar, Sidebar, Header, Modal, Field, TextField, SelectField, ModalHost });

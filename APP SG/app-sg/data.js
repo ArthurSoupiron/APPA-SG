@@ -109,6 +109,116 @@ const STATUS_LABEL = {
 
 const memberById = (id) => MEMBERS.find(m => m.id === id);
 
+// ===========================================================================
+//  Store réactif + persistance (localStorage)
+//  Les écrans lisent directement MEMBERS / DOCS / ACTIVITY (globals). On mute
+//  ces tableaux EN PLACE (push/splice/affectation de champ) pour préserver les
+//  références, on sauvegarde dans le navigateur, puis on émet « sg:change »
+//  pour forcer un re-render de l'app.
+// ===========================================================================
+const SG_STORE_KEY = 'jeece-sg-store-v1';
+
+const sgPersist = () => {
+  try {
+    localStorage.setItem(SG_STORE_KEY, JSON.stringify({ MEMBERS, DOCS, ACTIVITY }));
+  } catch (e) { /* quota / mode privé : on ignore */ }
+};
+
+const sgHydrate = () => {
+  try {
+    const raw = localStorage.getItem(SG_STORE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (Array.isArray(saved.MEMBERS))  MEMBERS.splice(0, MEMBERS.length, ...saved.MEMBERS);
+    if (Array.isArray(saved.DOCS))     DOCS.splice(0, DOCS.length, ...saved.DOCS);
+    if (Array.isArray(saved.ACTIVITY)) ACTIVITY.splice(0, ACTIVITY.length, ...saved.ACTIVITY);
+  } catch (e) { /* données corrompues : on repart du seed */ }
+};
+
+// applique une mutation : persiste + notifie l'UI
+const sgCommit = () => { sgPersist(); window.dispatchEvent(new Event('sg:change')); };
+
+// réinitialise le store (utile pour la démo)
+const sgReset = () => { try { localStorage.removeItem(SG_STORE_KEY); } catch (e) {} location.reload(); };
+
+// journalise une entrée dans l'audit trail (en tête de liste)
+const logActivity = (entry) => {
+  ACTIVITY.unshift({ when: "à l'instant", tone: 'brand', icon: 'pencil', ...entry });
+  if (ACTIVITY.length > 40) ACTIVITY.length = 40;
+};
+
+// ---- Mutations métier ----------------------------------------------------
+
+// crée un dossier membre vide (toutes pièces manquantes) et le persiste
+const addMember = (data) => {
+  const first = (data.first || '').trim();
+  const last  = (data.last || '').trim();
+  const initials = ((first[0] || '?') + (last[0] || '')).toUpperCase();
+  let id = (initials.toLowerCase() || 'm') ;
+  while (MEMBERS.some(m => m.id === id)) id += Math.floor(Math.random() * 10);
+  const m = {
+    id, first, last, initials,
+    av: 'g' + (1 + (MEMBERS.length % 7)),
+    role: data.role || 'Membre actif',
+    pole: data.pole || 'SI',
+    promo: Number(data.promo) || new Date().getFullYear() + 2,
+    year: data.year || 'L1',
+    status: data.status || 'active',
+    email: data.email || `${first}.${last}`.toLowerCase().replace(/\s+/g, '') + '@jeece.fr',
+    phone: data.phone || '—',
+    joined: data.joined || new Date().toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }),
+    city: data.city || '—',
+    docs: { BA: 'missing', CHARTE: 'missing', CE: 'missing', RIB: 'missing', RC: 'missing', CV: 'missing' },
+  };
+  MEMBERS.push(m);
+  logActivity({ who: 'lb', action: 'a créé le dossier de', target: `${first} ${last}`, ctx: 'nouveau membre', icon: 'user-plus', tone: 'brand' });
+  sgCommit();
+  return m;
+};
+
+// change l'état d'une pièce d'un dossier : 'missing' → 'pending' → 'ok'
+const setDocStatus = (memberId, code, status) => {
+  const m = memberById(memberId);
+  if (!m) return;
+  m.docs[code] = status;
+  const dt = (DOC_TYPES.find(d => d.code === code) || {}).label || code;
+  const verb = status === 'ok' ? 'a validé' : status === 'pending' ? 'a déposé' : 'a retiré';
+  logActivity({ who: 'lb', action: verb, target: `${dt} · ${m.first} ${m.last}`, ctx: 'dossier membre', icon: status === 'ok' ? 'check-circle' : 'upload', tone: status === 'ok' ? 'brand' : 'info' });
+  sgCommit();
+};
+
+// dépose un document dans la GED
+const addGedDoc = (data) => {
+  const id = 'g' + (DOCS.length + 1) + Math.floor(Math.random() * 100);
+  const now = new Date();
+  const cat = data.cat || 'cr';
+  const prefix = { ba: 'BA', cr: 'CR', pvag: 'PV-AG', ri: 'RI', statuts: 'STAT', pref: 'PREF', compta: 'COMPTA', contrats: 'CONV' }[cat] || 'DOC';
+  const doc = {
+    id,
+    title: (data.title || 'Document sans titre').trim(),
+    cat,
+    pages: Number(data.pages) || 1,
+    format: data.format || 'PDF',
+    size: data.size || '—',
+    mandat: '25–26',
+    ref: data.ref || `${prefix}-2026-${String(100 + DOCS.length)}`,
+    status: data.status || 'pending',
+    author: data.author || 'lb',
+    signers: [],
+    date: now.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }),
+    dateAbs: now.toISOString().slice(0, 10),
+    tags: (data.tags || '').split(',').map(t => t.trim()).filter(Boolean),
+    security: data.security || 'Interne',
+  };
+  DOCS.unshift(doc);
+  logActivity({ who: doc.author, action: 'a déposé', target: doc.title, ctx: `catégorie ${(GED_CATS.find(c => c.id === cat) || {}).label || cat}`, icon: 'upload', tone: 'info' });
+  sgCommit();
+  return doc;
+};
+
+// hydrate dès le chargement du module (avant le 1er render)
+sgHydrate();
+
 // global rollups
 const rollups = () => {
   const active = MEMBERS.filter(m => m.status === 'active');
@@ -121,4 +231,5 @@ const rollups = () => {
 Object.assign(window, {
   DOC_TYPES, GED_CATS, MEMBERS, DEADLINES, DOCS, ACTIVITY, STATUS_LABEL,
   dossierStats, memberById, rollups,
+  sgCommit, sgReset, logActivity, addMember, setDocStatus, addGedDoc,
 });

@@ -58,8 +58,8 @@ const ScreenDossier = ({ navigate, memberId }) => {
             <div style={{ fontSize: 11, color: 'var(--ink-2)', fontWeight: 550 }}>Dossier {s.pct}%</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Btn kind="primary" icon="file-plus-2">Générer un doc</Btn>
-            <Btn icon="upload">Déposer une pièce</Btn>
+            <Btn kind="primary" icon="file-plus-2" onClick={() => openModal('doc', { author: m.id })}>Générer un doc</Btn>
+            <Btn icon="upload" onClick={() => openModal('piece', { memberId: m.id })}>Déposer une pièce</Btn>
           </div>
         </div>
         {/* sub stats */}
@@ -118,7 +118,8 @@ const ScreenDossier = ({ navigate, memberId }) => {
                   </span>
                   {v === 'ok'
                     ? <div style={{ display: 'flex', gap: 4 }}><IconBtn icon="eye" style={{ width: 30, height: 30 }} /><IconBtn icon="download" style={{ width: 30, height: 30 }} /></div>
-                    : <Btn size="sm" kind={v === 'missing' ? 'primary' : 'default'} icon="upload">{v === 'missing' ? 'Ajouter' : 'Valider'}</Btn>}
+                    : <Btn size="sm" kind={v === 'missing' ? 'primary' : 'default'} icon={v === 'missing' ? 'upload' : 'check'}
+                        onClick={() => setDocStatus(m.id, d.code, v === 'missing' ? 'pending' : 'ok')}>{v === 'missing' ? 'Ajouter' : 'Valider'}</Btn>}
                 </div>
               );
             })}

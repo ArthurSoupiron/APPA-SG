@@ -11,6 +11,7 @@ const App = () => {
   const [route, setRoute] = React.useState(parseHash());
   const [search, setSearch] = React.useState('');
   useIcons();
+  useStore(); // re-render l'app entière à chaque mutation persistée
 
   React.useEffect(() => {
     const onHash = () => { setRoute(parseHash()); setSearch(''); window.scrollTo(0, 0); };
@@ -48,6 +49,7 @@ const App = () => {
         <Header crumbs={crumbs} search={search} setSearch={setSearch} navigate={navigate} />
         {body}
       </div>
+      <ModalHost navigate={navigate} />
     </div>
   );
 };

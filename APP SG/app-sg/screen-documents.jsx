@@ -15,7 +15,7 @@ const ScreenDocuments = ({ navigate }) => {
     }
     xs.sort((a, b) => sort === 'date' ? b.dateAbs.localeCompare(a.dateAbs) : a.title.localeCompare(b.title));
     return xs;
-  }, [cat, q, sort]);
+  }, [cat, q, sort, DOCS.length]);
 
   React.useEffect(() => {
     if (filtered.length && !filtered.find(d => d.id === selId)) setSelId(filtered[0].id);
@@ -35,8 +35,8 @@ const ScreenDocuments = ({ navigate }) => {
           <div className="page__sub">486 documents centralisés · stockage cloud chiffré · accès SSO tracé</div>
         </div>
         <div className="page__actions">
-          <Btn icon="file-plus-2">Générer depuis modèle</Btn>
-          <Btn kind="primary" icon="upload">Déposer un document</Btn>
+          <Btn icon="file-plus-2" onClick={() => openModal('doc')}>Générer depuis modèle</Btn>
+          <Btn kind="primary" icon="upload" onClick={() => openModal('doc')}>Déposer un document</Btn>
         </div>
       </div>
 
