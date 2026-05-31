@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>SG · Dashboard — JEECE</title>
+<meta name="viewport" content="width=1280" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="sg.css" />
+<style>
+  .kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
+  .twocol { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
+  .task {
+    display: grid; grid-template-columns: auto 1fr auto auto;
+    align-items: center; gap: 12px;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+  }
+  .task:last-child { border-bottom: 0; }
+  .check {
+    width: 16px; height: 16px; border-radius: 4px; border: 1.4px solid var(--border-strong);
+    background: #fff; flex: 0 0 16px;
+  }
+  .task__title { font-size: 13px; }
+  .task__meta { font-size: 11.5px; color: var(--text-2); margin-top: 2px; }
+  .task__owner { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); }
+  .deadline {
+    display: grid; grid-template-columns: auto 1fr auto;
+    gap: 12px; align-items: center;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+  }
+  .deadline:last-child { border-bottom: 0; }
+  .deadline__date {
+    width: 48px; flex: 0 0 48px; text-align: center;
+    border: 1px solid var(--border); border-radius: 6px; padding: 6px 4px;
+    background: #fff;
+  }
+  .deadline__date-day { font-size: 16px; font-weight: 600; line-height: 1; }
+  .deadline__date-mo { font-size: 10px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+  .deadline__title { font-size: 13px; font-weight: 500; }
+  .deadline__sub { font-size: 11.5px; color: var(--text-2); margin-top: 2px; }
+  .deadline--soon .deadline__date { background: var(--highlight-soft); border-color: #FCD34D; }
+  .deadline--soon .deadline__date-day { color: #92400E; }
+  .deadline--past .deadline__date { background: var(--danger-soft); border-color: #FCA5A5; }
+  .deadline--past .deadline__date-day { color: var(--danger); }
+  .activity { display: flex; flex-direction: column; }
+  .activity__row {
+    display: grid; grid-template-columns: auto 1fr auto;
+    gap: 12px; align-items: center;
+    padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 12.5px;
+  }
+  .activity__row:last-child { border-bottom: 0; }
+  .activity__time { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ============ Sidebar ============ -->
+  <aside class="sidebar">
+    <div class="sidebar__logo">
+      <div class="sidebar__logo-mark">JE</div>
+      <div>
+        <div class="sidebar__logo-name">JEECE · SG</div>
+        <div class="sidebar__logo-sub">Mandat 2025–2026</div>
+      </div>
+    </div>
+
+    <a class="sidebar__item sidebar__item--active" href="01-dashboard.html">
+      <i data-lucide="layout-dashboard"></i><span>Dashboard</span>
+    </a>
+    <a class="sidebar__item" href="02-annuaire.html">
+      <i data-lucide="users"></i><span>Annuaire</span><span class="sidebar__item-count">84</span>
+    </a>
+    <a class="sidebar__item" href="03-fiche-membre.html">
+      <i data-lucide="user"></i><span>Fiche membre</span>
+    </a>
+    <a class="sidebar__item" href="04-bibliotheque.html">
+      <i data-lucide="library"></i><span>Bibliothèque docs</span><span class="sidebar__item-count">312</span>
+    </a>
+
+    <div class="sidebar__group-label">Gestion</div>
+    <a class="sidebar__item" href="#"><i data-lucide="file-plus-2"></i><span>Génération docs</span></a>
+    <a class="sidebar__item" href="#"><i data-lucide="bell-ring"></i><span>Échéances</span><span class="sidebar__item-count">7</span></a>
+    <a class="sidebar__item" href="#"><i data-lucide="history"></i><span>Audit trail</span></a>
+    <a class="sidebar__item" href="#"><i data-lucide="settings"></i><span>Paramètres</span></a>
+
+    <div class="sidebar__user">
+      <div class="avatar avatar--c1">LB</div>
+      <div class="sidebar__user-meta">
+        <div class="sidebar__user-name">Léa Bernard</div>
+        <div class="sidebar__user-role">Secrétaire Général</div>
+      </div>
+      <i data-lucide="chevron-down" class="muted-2"></i>
+    </div>
+  </aside>
+
+  <!-- ============ Main ============ -->
+  <div class="main">
+    <header class="header">
+      <nav class="crumbs">
+        <span>Espace SG</span>
+        <span class="crumbs__sep">/</span>
+        <span class="crumbs__last">Dashboard</span>
+      </nav>
+      <div class="header__search">
+        <i data-lucide="search"></i>
+        <span>Rechercher membre, doc, mandat…</span>
+        <kbd>⌘K</kbd>
+      </div>
+      <div class="header__actions">
+        <button class="icon-btn" aria-label="Aide"><i data-lucide="help-circle"></i></button>
+        <button class="icon-btn" aria-label="Notifications"><i data-lucide="bell"></i><span class="icon-btn__dot"></span></button>
+        <div class="avatar avatar--c1">LB</div>
+      </div>
+    </header>
+
+    <section class="page">
+      <div class="page__head">
+        <div>
+          <h1 class="page__title">Bonjour Léa</h1>
+          <div class="page__sub">Lundi 11 mai 2026 · vue d'ensemble du mandat</div>
+        </div>
+        <div class="page__actions">
+          <button class="btn"><i data-lucide="download"></i>Exporter état des lieux</button>
+          <button class="btn btn--primary"><i data-lucide="plus"></i>Nouveau membre</button>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="card kpi">
+          <div class="kpi__label"><i data-lucide="users"></i>Membres actifs</div>
+          <div class="kpi__value tabular">84</div>
+          <div class="kpi__hint kpi__hint--up"><i data-lucide="trending-up" style="width:13px;height:13px"></i>+6 depuis sept.</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi__label"><i data-lucide="alert-triangle"></i>Alertes échéances</div>
+          <div class="kpi__value tabular" style="color:var(--highlight)">7</div>
+          <div class="kpi__hint kpi__hint--warn">3 sous 30j · 2 critiques</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi__label"><i data-lucide="file-signature"></i>Docs en attente signature</div>
+          <div class="kpi__value tabular">12</div>
+          <div class="kpi__hint">4 PV bureau · 5 attestations · 3 contrats</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi__label"><i data-lucide="calendar-clock"></i>AG à venir</div>
+          <div class="kpi__value">14 juin</div>
+          <div class="kpi__hint">AG ordinaire · J−34</div>
+        </div>
+      </div>
+
+      <!-- Two columns -->
+      <div class="twocol">
+        <!-- À traiter cette semaine -->
+        <div class="card">
+          <div class="card__head">
+            <div>
+              <div class="card__title">À traiter cette semaine</div>
+              <div class="card__sub">8 actions · 2 en retard</div>
+            </div>
+            <div class="spacer"></div>
+            <span class="badge badge--danger"><span class="dot"></span>2 retard</span>
+            <button class="btn btn--ghost btn--sm">Tout voir</button>
+          </div>
+          <div>
+            <div class="task">
+              <div class="check"></div>
+              <div>
+                <div class="task__title">Signer le PV de Bureau du 5 mai</div>
+                <div class="task__meta">PV Bureau · 4 pages · partagé par H. Martin</div>
+              </div>
+              <span class="badge badge--danger"><span class="dot"></span>En retard 2j</span>
+              <div class="task__owner"><div class="avatar avatar--c2" style="width:22px;height:22px;font-size:10px">HM</div></div>
+            </div>
+            <div class="task">
+              <div class="check"></div>
+              <div>
+                <div class="task__title">Préparer ordre du jour Bureau du 12 mai</div>
+                <div class="task__meta">Réunion Bureau · 9 points en attente</div>
+              </div>
+              <span class="badge badge--warn"><span class="dot"></span>Demain</span>
+              <div class="task__owner"><div class="avatar avatar--c1" style="width:22px;height:22px;font-size:10px">LB</div></div>
+            </div>
+            <div class="task">
+              <div class="check"></div>
+              <div>
+                <div class="task__title">Valider 5 attestations de fonction</div>
+                <div class="task__meta">Pôle Trésorerie · stage convention</div>
+              </div>
+              <span class="badge badge--primary"><span class="dot"></span>13 mai</span>
+              <div class="task__owner"><div class="avatar avatar--c4" style="width:22px;height:22px;font-size:10px">CR</div></div>
+            </div>
+            <div class="task">
+              <div class="check"></div>
+              <div>
+                <div class="task__title">Relire RI v.4 avant diffusion</div>
+                <div class="task__meta">Règlement intérieur · 12 pages · diff Présidence</div>
+              </div>
+              <span class="badge badge--primary"><span class="dot"></span>14 mai</span>
+              <div class="task__owner"><div class="avatar avatar--c5" style="width:22px;height:22px;font-size:10px">PD</div></div>
+            </div>
+            <div class="task">
+              <div class="check"></div>
+              <div>
+                <div class="task__title">Mettre à jour le registre des membres</div>
+                <div class="task__meta">3 nouveaux postulants à enregistrer</div>
+              </div>
+              <span class="badge badge--primary"><span class="dot"></span>15 mai</span>
+              <div class="task__owner"><div class="avatar avatar--c1" style="width:22px;height:22px;font-size:10px">LB</div></div>
+            </div>
+            <div class="task">
+              <div class="check"></div>
+              <div>
+                <div class="task__title">Archiver CR Bureau d'avril</div>
+                <div class="task__meta">3 CR · classement automatique disponible</div>
+              </div>
+              <span class="badge"><span class="dot"></span>16 mai</span>
+              <div class="task__owner"><div class="avatar avatar--c3" style="width:22px;height:22px;font-size:10px">EM</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Échéances légales 90j -->
+        <div class="card">
+          <div class="card__head">
+            <div>
+              <div class="card__title">Échéances légales · 90 jours</div>
+              <div class="card__sub">Préfecture, AG, mandats · auto-monitoring</div>
+            </div>
+            <div class="spacer"></div>
+            <button class="btn btn--ghost btn--sm"><i data-lucide="calendar"></i>Calendrier</button>
+          </div>
+          <div>
+            <div class="deadline deadline--past">
+              <div class="deadline__date">
+                <div class="deadline__date-day">09</div>
+                <div class="deadline__date-mo">mai</div>
+              </div>
+              <div>
+                <div class="deadline__title">Déclaration changement bureau · Préfecture</div>
+                <div class="deadline__sub">Cerfa 13971 · échue · à régulariser</div>
+              </div>
+              <span class="badge badge--danger"><span class="dot"></span>−2j</span>
+            </div>
+            <div class="deadline deadline--soon">
+              <div class="deadline__date">
+                <div class="deadline__date-day">14</div>
+                <div class="deadline__date-mo">juin</div>
+              </div>
+              <div>
+                <div class="deadline__title">Assemblée Générale ordinaire 2026</div>
+                <div class="deadline__sub">Convocation à diffuser avant 31 mai</div>
+              </div>
+              <span class="badge badge--warn"><span class="dot"></span>J−34</span>
+            </div>
+            <div class="deadline deadline--soon">
+              <div class="deadline__date">
+                <div class="deadline__date-day">22</div>
+                <div class="deadline__date-mo">juin</div>
+              </div>
+              <div>
+                <div class="deadline__title">Renouvellement assurance RC</div>
+                <div class="deadline__sub">Allianz · contrat n°FR-208441</div>
+              </div>
+              <span class="badge badge--warn"><span class="dot"></span>J−42</span>
+            </div>
+            <div class="deadline">
+              <div class="deadline__date">
+                <div class="deadline__date-day">30</div>
+                <div class="deadline__date-mo">juin</div>
+              </div>
+              <div>
+                <div class="deadline__title">Dépôt comptes annuels 2025</div>
+                <div class="deadline__sub">JOAFE · seuil dépassé · obligatoire</div>
+              </div>
+              <span class="badge badge--primary"><span class="dot"></span>J−50</span>
+            </div>
+            <div class="deadline">
+              <div class="deadline__date">
+                <div class="deadline__date-day">15</div>
+                <div class="deadline__date-mo">juil</div>
+              </div>
+              <div>
+                <div class="deadline__title">Fin de mandat 2025–2026</div>
+                <div class="deadline__sub">Passation Bureau · 14 sortants</div>
+              </div>
+              <span class="badge badge--primary"><span class="dot"></span>J−65</span>
+            </div>
+            <div class="deadline">
+              <div class="deadline__date">
+                <div class="deadline__date-day">02</div>
+                <div class="deadline__date-mo">août</div>
+              </div>
+              <div>
+                <div class="deadline__title">Déclaration nouveaux statuts</div>
+                <div class="deadline__sub">Suite vote AG · Préfecture du 75</div>
+              </div>
+              <span class="badge"><span class="dot"></span>J−83</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activité récente -->
+      <div class="card" style="margin-top:12px">
+        <div class="card__head">
+          <div class="card__title">Activité récente</div>
+          <div class="card__sub">audit trail · dernières 24h</div>
+          <div class="spacer"></div>
+          <button class="btn btn--ghost btn--sm">Voir l'audit complet</button>
+        </div>
+        <div class="activity">
+          <div class="activity__row">
+            <div class="avatar avatar--c2" style="width:24px;height:24px;font-size:11px">HM</div>
+            <div><strong>Hugo Martin</strong> a généré <em>Attestation de fonction · A. Diop</em> depuis le template <span class="muted">attestation-fonction-v3</span></div>
+            <span class="activity__time">Il y a 12 min</span>
+          </div>
+          <div class="activity__row">
+            <div class="avatar avatar--c5" style="width:24px;height:24px;font-size:11px">PD</div>
+            <div><strong>Paul Delcourt</strong> a modifié la fiche membre <em>Y. Belkacem</em> · pôle changé <span class="muted">SI → Qualité</span></div>
+            <span class="activity__time">Il y a 1h</span>
+          </div>
+          <div class="activity__row">
+            <div class="avatar avatar--c4" style="width:24px;height:24px;font-size:11px">CR</div>
+            <div><strong>Camille Roy</strong> a uploadé <em>PV AG Extraordinaire · 28 avril 2026.pdf</em> · catégorie <span class="muted">PV AG</span></div>
+            <span class="activity__time">Il y a 3h</span>
+          </div>
+          <div class="activity__row">
+            <div class="avatar avatar--c1" style="width:24px;height:24px;font-size:11px">LB</div>
+            <div><strong>Léa Bernard</strong> a clôturé le statut <em>Postulant → Actif</em> de <span class="muted">3 nouveaux membres</span></div>
+            <span class="activity__time">Hier 18:42</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script>lucide.createIcons({ attrs: { 'stroke-width': 1.6 } });</script>
+</body>
+</html>

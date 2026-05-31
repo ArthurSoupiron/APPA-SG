@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>SG · Annuaire — JEECE</title>
+<meta name="viewport" content="width=1280" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="sg.css" />
+<style>
+  .filter-bar {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 12px 14px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-card); margin-bottom: 12px; box-shadow: var(--shadow-1);
+  }
+  .filter-bar__search {
+    flex: 1; min-width: 280px; max-width: 380px;
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-btn);
+  }
+  .filter-bar__search input {
+    border: 0; background: transparent; outline: none; flex: 1; font-size: 13px; color: var(--text);
+  }
+  .filter-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: var(--radius-btn);
+    background: var(--surface); border: 1px solid var(--border);
+    font-size: 12.5px; color: var(--text); cursor: pointer;
+  }
+  .filter-chip .lucide { width: 12px; height: 12px; color: var(--text-3); }
+  .filter-chip--active { background: var(--primary-soft); border-color: var(--primary-soft-2); color: var(--primary); }
+  .filter-chip--active .lucide { color: var(--primary); }
+  .summary {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 4px 14px; font-size: 12.5px; color: var(--text-2);
+  }
+  .summary strong { color: var(--text); font-weight: 600; }
+
+  .table .col-name { display: flex; align-items: center; gap: 10px; }
+  .table .name__txt { line-height: 1.2; }
+  .table .name__main { font-weight: 500; font-size: 13px; }
+  .table .name__sub { font-size: 11.5px; color: var(--text-2); }
+  .table .col-contact { font-size: 12.5px; color: var(--text-2); line-height: 1.4; }
+  .table .col-actions { text-align: right; }
+  .pagination {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; font-size: 12.5px; color: var(--text-2);
+  }
+  .page-btn {
+    width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border);
+    background: #fff; display: inline-grid; place-items: center; cursor: pointer; color: var(--text);
+  }
+  .page-btn--active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .page-btn--muted { color: var(--text-3); }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar__logo">
+      <div class="sidebar__logo-mark">JE</div>
+      <div>
+        <div class="sidebar__logo-name">JEECE · SG</div>
+        <div class="sidebar__logo-sub">Mandat 2025–2026</div>
+      </div>
+    </div>
+    <a class="sidebar__item" href="01-dashboard.html"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></a>
+    <a class="sidebar__item sidebar__item--active" href="02-annuaire.html"><i data-lucide="users"></i><span>Annuaire</span><span class="sidebar__item-count">84</span></a>
+    <a class="sidebar__item" href="03-fiche-membre.html"><i data-lucide="user"></i><span>Fiche membre</span></a>
+    <a class="sidebar__item" href="04-bibliotheque.html"><i data-lucide="library"></i><span>Bibliothèque docs</span><span class="sidebar__item-count">312</span></a>
+    <div class="sidebar__group-label">Gestion</div>
+    <a class="sidebar__item" href="#"><i data-lucide="file-plus-2"></i><span>Génération docs</span></a>
+    <a class="sidebar__item" href="#"><i data-lucide="bell-ring"></i><span>Échéances</span><span class="sidebar__item-count">7</span></a>
+    <a class="sidebar__item" href="#"><i data-lucide="history"></i><span>Audit trail</span></a>
+    <a class="sidebar__item" href="#"><i data-lucide="settings"></i><span>Paramètres</span></a>
+    <div class="sidebar__user">
+      <div class="avatar avatar--c1">LB</div>
+      <div class="sidebar__user-meta">
+        <div class="sidebar__user-name">Léa Bernard</div>
+        <div class="sidebar__user-role">Secrétaire Général</div>
+      </div>
+      <i data-lucide="chevron-down" class="muted-2"></i>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="header">
+      <nav class="crumbs">
+        <span>Espace SG</span>
+        <span class="crumbs__sep">/</span>
+        <span class="crumbs__last">Annuaire</span>
+      </nav>
+      <div class="header__search">
+        <i data-lucide="search"></i><span>Rechercher membre, doc, mandat…</span><kbd>⌘K</kbd>
+      </div>
+      <div class="header__actions">
+        <button class="icon-btn" aria-label="Aide"><i data-lucide="help-circle"></i></button>
+        <button class="icon-btn" aria-label="Notifications"><i data-lucide="bell"></i><span class="icon-btn__dot"></span></button>
+        <div class="avatar avatar--c1">LB</div>
+      </div>
+    </header>
+
+    <section class="page">
+      <div class="page__head">
+        <div>
+          <h1 class="page__title">Annuaire des membres</h1>
+          <div class="page__sub">84 membres actifs · 12 alumni · 3 postulants</div>
+        </div>
+        <div class="page__actions">
+          <button class="btn"><i data-lucide="download"></i>Exporter CSV</button>
+          <button class="btn"><i data-lucide="upload"></i>Importer</button>
+          <button class="btn btn--primary"><i data-lucide="plus"></i>Nouveau membre</button>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <div class="filter-bar__search">
+          <i data-lucide="search" style="width:14px;height:14px;color:var(--text-3)"></i>
+          <input placeholder="Rechercher par nom, prénom, email…" />
+        </div>
+        <span class="filter-chip filter-chip--active">Pôle · Tous <i data-lucide="chevron-down"></i></span>
+        <span class="filter-chip">Mandat · 25–26 <i data-lucide="chevron-down"></i></span>
+        <span class="filter-chip">Statut · Actif <i data-lucide="chevron-down"></i></span>
+        <span class="filter-chip">Promo · Toutes <i data-lucide="chevron-down"></i></span>
+        <div class="spacer"></div>
+        <button class="btn btn--ghost btn--sm"><i data-lucide="x"></i>Réinitialiser</button>
+        <button class="btn btn--sm"><i data-lucide="sliders-horizontal"></i>Filtres avancés</button>
+      </div>
+
+      <div class="summary">
+        <span><strong>23</strong> membres affichés</span>
+        <span class="muted-2">·</span>
+        <span>Tri : <strong>Pôle, A→Z</strong></span>
+        <div class="spacer"></div>
+        <span class="row" style="gap:6px">
+          <button class="btn btn--ghost btn--sm"><i data-lucide="list"></i>Liste</button>
+          <button class="btn btn--ghost btn--sm" style="color:var(--text-3)"><i data-lucide="layout-grid"></i>Grille</button>
+        </span>
+      </div>
+
+      <!-- Table -->
+      <div class="card">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width:34px"><input type="checkbox" /></th>
+              <th>Membre</th>
+              <th>Pôle</th>
+              <th>Rôle</th>
+              <th>Promo</th>
+              <th>Statut</th>
+              <th>Contact</th>
+              <th style="width:32px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- 1 -->
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td><div class="col-name"><div class="avatar avatar--md avatar--c1">LB</div><div class="name__txt"><div class="name__main">Léa Bernard</div><div class="name__sub">L3 · ECE Paris</div></div></div></td>
+              <td><span class="badge badge--primary">SG</span></td>
+              <td>Secrétaire Général</td>
+              <td class="tabular">2026</td>
+              <td><span class="badge badge--success"><span class="dot"></span>Actif</span></td>
+              <td class="col-contact">lea.bernard@jeece.fr<br/><span class="muted-2">+33 6 78 12 34 56</span></td>
+              <td class="col-actions"><button class="icon-btn" style="width:28px;height:28px"><i data-lucide="more-horizontal"></i></button></td>
+            </tr>
+            <!-- 2 -->
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td><div class="col-name"><div class="avatar avatar--md avatar--c2">HM</div><div class="name__txt"><div class="name__main">Hugo Martin</div><div class="name__sub">M1 · ECE Paris</div></div></div></td>
+              <td><span class="badge badge--primary">Présidence</span></td>
+              <td>Président</td>
+              <td class="tabular">2025</td>
+              <td><span class="badge badge--success"><span class="dot"></span>Actif</span></td>
+              <td class="col-contact">hugo.martin@jeece.fr<br/><span class="muted-2">+33 6 12 90 22 18</span></td>
+              <td class="col-actions"><button class="icon-btn" style="width:28px;height:28px"><i data-lucide="more-horizontal"></i></button></td>
+            </tr>
+            <!-- 3 -->
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td><div class="col-name"><div class="avatar avatar--md avatar--c4">CR</div><div class="name__txt"><div class="name__main">Camille Roy</div><div class="name__sub">L3 · ECE Paris</div></div></div></td>
+              <td><span class="badge badge--primary">Trésorerie</span></td>
+              <td>Trésorière</td>
+              <td class="tabular">2026</td>
+              <td><span class="badge badge--success"><span class="dot"></span>Actif</span></td>
+              <td class="col-contact">camille.roy@jeece.fr<br/><span class="muted-2">+33 6 84 55 71 22</span></td>
+              <td class="col-actions"><button class="icon-btn" style="width:28px;height:28px"><i data-lucide="more-horizontal"></i></button></td>
+            </tr>
+            <!-- 4 -->
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td><div class="col-name"><div class="avatar avatar--md avatar--c5">PD</div><div class="name__txt"><div class="name__main">Paul Delcourt</div><div class="name__sub">M1 · ECE Paris</div></div></div></td>
+              <td><span class="badge badge--primary">Qualité</span></td>
+              <td>VP Qualité</td>
+              <td class="tabular">2025</td>
+              <td><span class="badge badge--success"><span class="dot"></span>Actif</span></td>
+              <td class="col-contact">paul.delcourt@jeece.fr<br/><span class="muted-2">+33 6 18 23 88 04</span></td>
+              <td class="col-actions"><button class="icon-btn" style="width:28px;height:28px"><i data-lucide="more-horizontal"></i></button></td>
+            </tr>
+            <!-- 5 -->
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td><div class="col-name"><div class="avatar avatar--md avatar--c3">EM</div><div class="name__txt"><div class="name__main">Élise Moreau</div><div class="name__sub">L2 · ECE Paris</div></div></div></td>
+              <td><span class="badge badge--primary">Com</span></td>
+              <td>Chargée comm. interne</td>
+              <td class="tabular">2027</td>
+              <td><span class="badge badge--success"><span class="dot"></span>Actif</span></td>
+              <td class="col-contact">elise.moreau@jeece.fr<br/><span class="muted-2">+33 7 02 14 65 30</span></td>
+              <td class="col-actions"><button class="icon-btn" style="width:28px;height:28px"><i data-lucide="more-horizontal"></i></button></td>
+            </tr>
+            <!-- 6 -->
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td><div class="col-name"><div class="avatar avatar--md avatar--c7">YB</div><div class="name__txt"><div class="name__main">Yanis Belkacem</div><div class="name__sub">M2 · ECE Paris</div></div></div></td>
+              <td><span class="badge badge--primary">SI</span></td>
+              <td>VP Système d'information</td>
+              <td class="tabular">2025</td>
+              <td><span class="badge badge--success"><span class="dot"></span>Actif</span></td>
+              <td class="col-contact">yanis.belkacem@jeece.fr<br/><span class="muted-2">+33 6 47 88 12 09</span></td>
+              <td class="col-actions"><button class="icon-btn" style="width:28px;height:28px"><i data-lucide="more-horizontal"></i></button></td>
+            </tr>
+            <!-- 7 -->
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td><div class="col-name"><div class="avatar avatar--md avatar--c6">AD</div><div class="name__txt"><div class="name__main">Anaïs Diop</div><div class="name__sub">L3 · ECE Paris</div></div></div></td>
+              <td><span class="badge badge--primary">RH</span></td>
+              <td>Chargée recrutement</td>
+              <td class="tabular">2026</td>
+              <td><span class="badge badge--success"><span class="dot"></span>Actif</span></td>
+              <td class="col-contact">anais.diop@jeece.fr<br/><span class="muted-2">+33 6 31 09 67 11</span></td>
+              <td class="col-actions"><button class="icon-btn" style="width:28px;height:28px"><i data-lucide="more-horizontal"></i></button></td>
+            </tr>
+            <!-- 8 -->
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td><div class="col-name"><div class="avatar avatar--md avatar--c2">TD</div><div class="name__txt"><div class="name__main">Théo Da Silva</div><div class="name__sub">M1 · ECE Paris</div></div></div></td>
+              <td><span class="badge badge--primary">Com</span></td>
+              <td>VP Communication</td>
+              <td class="tabular">2025</td>
+              <td><span class="badge badge--success"><span class="dot"></span>Actif</span></td>
+              <td class="col-contact">theo.dasilva@jeece.fr<br/><span class="muted-2">+33 7 60 22 18 47</span></td>
+              <td class="col-actions"><button class="icon-btn" style="width:28px;height:28px"><i data-lucide="more-horizontal"></i></button></td>
+            </tr>
+            <!-- 9 — postulant -->
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td><div class="col-name"><div class="avatar avatar--md avatar--c5">MN</div><div class="name__txt"><div class="name__main">Marion Nguyen</div><div class="name__sub">L1 · ECE Paris</div></div></div></td>
+              <td><span class="badge">SI</span></td>
+              <td><span class="muted">À définir</span></td>
+              <td class="tabular">2028</td>
+              <td><span class="badge badge--warn"><span class="dot"></span>Postulant</span></td>
+              <td class="col-contact">marion.nguyen@edu.ece.fr<br/><span class="muted-2">+33 7 88 14 02 99</span></td>
+              <td class="col-actions"><button class="icon-btn" style="width:28px;height:28px"><i data-lucide="more-horizontal"></i></button></td>
+            </tr>
+            <!-- 10 — alumni -->
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td><div class="col-name"><div class="avatar avatar--md avatar--c3">JV</div><div class="name__txt"><div class="name__main">Jules Vasseur</div><div class="name__sub">Diplômé · ECE Paris 24</div></div></div></td>
+              <td><span class="badge">Présidence</span></td>
+              <td>Ancien Président</td>
+              <td class="tabular">2024</td>
+              <td><span class="badge"><span class="dot"></span>Alumni</span></td>
+              <td class="col-contact">jules.vasseur@gmail.com<br/><span class="muted-2">—</span></td>
+              <td class="col-actions"><button class="icon-btn" style="width:28px;height:28px"><i data-lucide="more-horizontal"></i></button></td>
+            </tr>
+            <!-- 11 — exclu -->
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td><div class="col-name"><div class="avatar avatar--md avatar--c4">RF</div><div class="name__txt"><div class="name__main">Romain Faure</div><div class="name__sub">L2 · ECE Paris</div></div></div></td>
+              <td><span class="badge">SI</span></td>
+              <td>Membre actif</td>
+              <td class="tabular">2027</td>
+              <td><span class="badge badge--danger"><span class="dot"></span>Exclu</span></td>
+              <td class="col-contact">romain.faure@edu.ece.fr<br/><span class="muted-2">Non joignable</span></td>
+              <td class="col-actions"><button class="icon-btn" style="width:28px;height:28px"><i data-lucide="more-horizontal"></i></button></td>
+            </tr>
+            <!-- 12 -->
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td><div class="col-name"><div class="avatar avatar--md avatar--c7">SH</div><div class="name__txt"><div class="name__main">Sarah Halimi</div><div class="name__sub">M1 · ECE Paris</div></div></div></td>
+              <td><span class="badge badge--primary">RH</span></td>
+              <td>VP Ressources humaines</td>
+              <td class="tabular">2025</td>
+              <td><span class="badge badge--success"><span class="dot"></span>Actif</span></td>
+              <td class="col-contact">sarah.halimi@jeece.fr<br/><span class="muted-2">+33 6 45 91 03 27</span></td>
+              <td class="col-actions"><button class="icon-btn" style="width:28px;height:28px"><i data-lucide="more-horizontal"></i></button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="pagination">
+          <span>Affichage <strong>1–12</strong> sur 84 membres</span>
+          <div class="row" style="gap:4px">
+            <button class="page-btn page-btn--muted"><i data-lucide="chevron-left" style="width:14px;height:14px"></i></button>
+            <button class="page-btn page-btn--active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <button class="page-btn">…</button>
+            <button class="page-btn">7</button>
+            <button class="page-btn"><i data-lucide="chevron-right" style="width:14px;height:14px"></i></button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script>lucide.createIcons({ attrs: { 'stroke-width': 1.6 } });</script>
+</body>
+</html>

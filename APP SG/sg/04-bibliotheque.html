@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>SG · Bibliothèque — JEECE</title>
+<meta name="viewport" content="width=1280" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="sg.css" />
+<style>
+  .lib { display: grid; grid-template-columns: 220px 1fr 320px; gap: 12px; }
+  .lib-side { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-1); padding: 8px; height: fit-content; }
+  .lib-side__h { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 10px 6px; }
+  .cat {
+    display: flex; align-items: center; gap: 9px; padding: 7px 10px;
+    border-radius: 6px; font-size: 13px; color: var(--text-2); cursor: pointer;
+  }
+  .cat:hover { background: #F3F4F6; color: var(--text); }
+  .cat--active { background: var(--primary-soft); color: var(--primary); font-weight: 500; }
+  .cat .lucide { width: 15px; height: 15px; flex: 0 0 15px; }
+  .cat__count { margin-left: auto; font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .cat--active .cat__count { color: var(--primary); }
+  .lib-side__sep { height: 1px; background: var(--border); margin: 6px 8px; }
+
+  .lib-list .toolbar {
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .lib-list .toolbar input {
+    flex: 1; border: 0; outline: none; background: transparent; font-size: 13px; color: var(--text);
+  }
+
+  .doc-item {
+    display: grid; grid-template-columns: auto 1fr auto auto auto;
+    gap: 12px; align-items: center;
+    padding: 12px 14px; border-bottom: 1px solid var(--border); cursor: pointer;
+  }
+  .doc-item:last-child { border-bottom: 0; }
+  .doc-item:hover { background: #FAFAFA; }
+  .doc-item--active { background: var(--primary-soft); }
+  .doc-item--active:hover { background: var(--primary-soft); }
+  .doc-item__icon {
+    width: 36px; height: 36px; border-radius: 6px; background: #F3F4F6;
+    display: grid; place-items: center; flex: 0 0 36px;
+  }
+  .doc-item__icon .lucide { width: 16px; height: 16px; color: var(--text-2); }
+  .doc-item--active .doc-item__icon { background: #fff; }
+  .doc-item--active .doc-item__icon .lucide { color: var(--primary); }
+  .doc-item__title { font-size: 13px; font-weight: 500; color: var(--text); }
+  .doc-item__sub { font-size: 11.5px; color: var(--text-2); margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .doc-item__author { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-2); }
+  .doc-item__date { font-size: 11.5px; color: var(--text-3); font-variant-numeric: tabular-nums; min-width: 54px; text-align: right; }
+
+  /* Preview pane */
+  .preview { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-1); display: flex; flex-direction: column; height: fit-content; }
+  .preview__head { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .preview__title { font-size: 14px; font-weight: 600; line-height: 1.3; }
+  .preview__sub { font-size: 11.5px; color: var(--text-2); margin-top: 4px; }
+  .preview__doc {
+    margin: 14px 16px; padding: 16px; background: #FAFAFA;
+    border: 1px dashed var(--border); border-radius: 6px; aspect-ratio: 0.78; position: relative;
+    display: flex; flex-direction: column; gap: 6px; overflow: hidden;
+    font-family: 'Geist', sans-serif;
+  }
+  .preview__doc-head { font-size: 9px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+  .preview__doc-title { font-size: 11px; font-weight: 600; color: var(--text); margin: 4px 0 8px; }
+  .preview__doc-line { height: 4px; background: #E5E7EB; border-radius: 2px; }
+  .preview__doc-line--short { width: 60%; }
+  .preview__doc-line--mid { width: 85%; }
+  .preview__doc-block { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+  .preview__doc-stamp {
+    position: absolute; bottom: 16px; right: 16px;
+    width: 56px; height: 56px; border: 1.5px solid var(--primary);
+    border-radius: 999px; opacity: 0.55; transform: rotate(-12deg);
+    color: var(--primary); display: grid; place-items: center;
+    font-size: 8px; text-transform: uppercase; letter-spacing: 0.08em;
+    font-family: 'JetBrains Mono', monospace; font-weight: 600;
+    text-align: center; line-height: 1.2;
+  }
+  .preview__page-pill {
+    position: absolute; top: 10px; right: 10px;
+    font-size: 10px; color: var(--text-2);
+    background: #fff; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border);
+  }
+
+  .preview__meta { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+  .meta-row { display: grid; grid-template-columns: 110px 1fr; font-size: 12.5px; }
+  .meta-row__k { color: var(--text-2); }
+  .meta-row__v { color: var(--text); }
+  .meta-row__v code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: #F3F4F6; padding: 1px 5px; border-radius: 4px; }
+  .meta-row__v.row { gap: 6px; }
+
+  .preview__actions { padding: 12px 16px; border-top: 1px solid var(--border); display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .audit-mini { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+  .audit-mini__h { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; }
+  .audit-mini__row { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: flex-start; font-size: 12px; }
+  .audit-mini__time { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar__logo">
+      <div class="sidebar__logo-mark">JE</div>
+      <div>
+        <div class="sidebar__logo-name">JEECE · SG</div>
+        <div class="sidebar__logo-sub">Mandat 2025–2026</div>
+      </div>
+    </div>
+    <a class="sidebar__item" href="01-dashboard.html"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></a>
+    <a class="sidebar__item" href="02-annuaire.html"><i data-lucide="users"></i><span>Annuaire</span><span class="sidebar__item-count">84</span></a>
+    <a class="sidebar__item" href="03-fiche-membre.html"><i data-lucide="user"></i><span>Fiche membre</span></a>
+    <a class="sidebar__item sidebar__item--active" href="04-bibliotheque.html"><i data-lucide="library"></i><span>Bibliothèque docs</span><span class="sidebar__item-count">312</span></a>
+    <div class="sidebar__group-label">Gestion</div>
+    <a class="sidebar__item" href="#"><i data-lucide="file-plus-2"></i><span>Génération docs</span></a>
+    <a class="sidebar__item" href="#"><i data-lucide="bell-ring"></i><span>Échéances</span><span class="sidebar__item-count">7</span></a>
+    <a class="sidebar__item" href="#"><i data-lucide="history"></i><span>Audit trail</span></a>
+    <a class="sidebar__item" href="#"><i data-lucide="settings"></i><span>Paramètres</span></a>
+    <div class="sidebar__user">
+      <div class="avatar avatar--c1">LB</div>
+      <div class="sidebar__user-meta">
+        <div class="sidebar__user-name">Léa Bernard</div>
+        <div class="sidebar__user-role">Secrétaire Général</div>
+      </div>
+      <i data-lucide="chevron-down" class="muted-2"></i>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="header">
+      <nav class="crumbs">
+        <span>Espace SG</span>
+        <span class="crumbs__sep">/</span>
+        <span class="crumbs__last">Bibliothèque docs légaux</span>
+      </nav>
+      <div class="header__search">
+        <i data-lucide="search"></i><span>Rechercher membre, doc, mandat…</span><kbd>⌘K</kbd>
+      </div>
+      <div class="header__actions">
+        <button class="icon-btn"><i data-lucide="help-circle"></i></button>
+        <button class="icon-btn"><i data-lucide="bell"></i><span class="icon-btn__dot"></span></button>
+        <div class="avatar avatar--c1">LB</div>
+      </div>
+    </header>
+
+    <section class="page">
+      <div class="page__head">
+        <div>
+          <h1 class="page__title">Bibliothèque docs légaux</h1>
+          <div class="page__sub">312 documents · classés par type et par mandat · accès SG &amp; CDM</div>
+        </div>
+        <div class="page__actions">
+          <button class="btn"><i data-lucide="upload"></i>Importer</button>
+          <button class="btn"><i data-lucide="file-plus-2"></i>Générer depuis template</button>
+          <button class="btn btn--primary"><i data-lucide="plus"></i>Nouveau document</button>
+        </div>
+      </div>
+
+      <div class="lib">
+        <!-- ========== Sidebar catégories ========== -->
+        <aside class="lib-side">
+          <div class="lib-side__h">Catégories</div>
+          <div class="cat"><i data-lucide="folder"></i><span>Tous</span><span class="cat__count">312</span></div>
+          <div class="cat"><i data-lucide="scroll-text"></i><span>Statuts</span><span class="cat__count">4</span></div>
+          <div class="cat"><i data-lucide="book-open-text"></i><span>Règlement intérieur</span><span class="cat__count">6</span></div>
+          <div class="cat cat--active"><i data-lucide="file-check-2"></i><span>PV d'AG</span><span class="cat__count">28</span></div>
+          <div class="cat"><i data-lucide="clipboard-list"></i><span>CR de Bureau</span><span class="cat__count">94</span></div>
+          <div class="cat"><i data-lucide="building-2"></i><span>Préfecture</span><span class="cat__count">17</span></div>
+          <div class="cat"><i data-lucide="banknote"></i><span>Comptes annuels</span><span class="cat__count">12</span></div>
+          <div class="cat"><i data-lucide="file-signature"></i><span>Contrats / conv.</span><span class="cat__count">41</span></div>
+          <div class="cat"><i data-lucide="shield"></i><span>Assurances</span><span class="cat__count">8</span></div>
+          <div class="cat"><i data-lucide="archive"></i><span>Archives mandats</span><span class="cat__count">102</span></div>
+
+          <div class="lib-side__sep"></div>
+          <div class="lib-side__h">Mandats</div>
+          <div class="cat"><i data-lucide="dot"></i><span>2025–2026</span><span class="cat__count">82</span></div>
+          <div class="cat"><i data-lucide="dot"></i><span>2024–2025</span><span class="cat__count">76</span></div>
+          <div class="cat"><i data-lucide="dot"></i><span>2023–2024</span><span class="cat__count">71</span></div>
+          <div class="cat"><i data-lucide="dot"></i><span>Antérieurs</span><span class="cat__count">83</span></div>
+
+          <div class="lib-side__sep"></div>
+          <div class="cat" style="color:var(--accent)"><i data-lucide="bookmark"></i><span>Mes favoris</span><span class="cat__count">9</span></div>
+          <div class="cat" style="color:var(--highlight)"><i data-lucide="alert-triangle"></i><span>À signer</span><span class="cat__count">12</span></div>
+        </aside>
+
+        <!-- ========== Liste centrale ========== -->
+        <div class="card lib-list" style="padding:0">
+          <div class="toolbar">
+            <i data-lucide="search" style="width:14px;height:14px;color:var(--text-3)"></i>
+            <input placeholder="Rechercher dans PV d'AG…" />
+            <span class="badge badge--primary">28 docs</span>
+            <button class="btn btn--ghost btn--sm"><i data-lucide="arrow-down-up"></i>Date · récents</button>
+            <button class="btn btn--ghost btn--sm"><i data-lucide="filter"></i>Filtres</button>
+          </div>
+
+          <!-- doc rows -->
+          <div class="doc-item doc-item--active">
+            <div class="doc-item__icon"><i data-lucide="file-check-2"></i></div>
+            <div>
+              <div class="doc-item__title">PV d'AG Extraordinaire — Modification des statuts</div>
+              <div class="doc-item__sub">
+                <span>PDF · 6 pages</span>
+                <span>Mandat 25–26</span>
+                <span class="row" style="gap:4px"><i data-lucide="hash" style="width:10px;height:10px"></i><code style="font-family:'JetBrains Mono',monospace;font-size:11px">PV-AG-2026-002</code></span>
+              </div>
+            </div>
+            <span class="badge badge--success"><span class="dot"></span>Signé</span>
+            <div class="doc-item__author"><div class="avatar avatar--c1" style="width:22px;height:22px;font-size:10px">LB</div>Léa B.</div>
+            <div class="doc-item__date">28 avr 26</div>
+          </div>
+
+          <div class="doc-item">
+            <div class="doc-item__icon"><i data-lucide="file-check-2"></i></div>
+            <div>
+              <div class="doc-item__title">PV d'AG Ordinaire 2024–2025 — Approbation comptes</div>
+              <div class="doc-item__sub">
+                <span>PDF · 9 pages</span>
+                <span>Mandat 24–25</span>
+                <span><code style="font-family:'JetBrains Mono',monospace;font-size:11px">PV-AG-2025-001</code></span>
+              </div>
+            </div>
+            <span class="badge badge--success"><span class="dot"></span>Signé</span>
+            <div class="doc-item__author"><div class="avatar avatar--c3" style="width:22px;height:22px;font-size:10px">JV</div>Jules V.</div>
+            <div class="doc-item__date">14 juin 25</div>
+          </div>
+
+          <div class="doc-item">
+            <div class="doc-item__icon"><i data-lucide="file-text"></i></div>
+            <div>
+              <div class="doc-item__title">PV d'AG Élective — Bureau 2025–2026</div>
+              <div class="doc-item__sub">
+                <span>PDF · 7 pages</span>
+                <span>Mandat 25–26</span>
+                <span><code style="font-family:'JetBrains Mono',monospace;font-size:11px">PV-AG-2025-003</code></span>
+              </div>
+            </div>
+            <span class="badge badge--success"><span class="dot"></span>Signé</span>
+            <div class="doc-item__author"><div class="avatar avatar--c2" style="width:22px;height:22px;font-size:10px">HM</div>Hugo M.</div>
+            <div class="doc-item__date">12 sept 25</div>
+          </div>
+
+          <div class="doc-item">
+            <div class="doc-item__icon"><i data-lucide="file-warning"></i></div>
+            <div>
+              <div class="doc-item__title">PV d'AG Extraordinaire — Refonte RI · brouillon</div>
+              <div class="doc-item__sub">
+                <span>DOCX · 5 pages · v0.3</span>
+                <span>Mandat 25–26</span>
+              </div>
+            </div>
+            <span class="badge badge--warn"><span class="dot"></span>À signer</span>
+            <div class="doc-item__author"><div class="avatar avatar--c1" style="width:22px;height:22px;font-size:10px">LB</div>Léa B.</div>
+            <div class="doc-item__date">3 mai 26</div>
+          </div>
+
+          <div class="doc-item">
+            <div class="doc-item__icon"><i data-lucide="file-check-2"></i></div>
+            <div>
+              <div class="doc-item__title">PV d'AG Ordinaire 2023–2024</div>
+              <div class="doc-item__sub">
+                <span>PDF · 11 pages</span>
+                <span>Mandat 23–24</span>
+                <span><code style="font-family:'JetBrains Mono',monospace;font-size:11px">PV-AG-2024-001</code></span>
+              </div>
+            </div>
+            <span class="badge"><span class="dot"></span>Archivé</span>
+            <div class="doc-item__author"><div class="avatar avatar--c4" style="width:22px;height:22px;font-size:10px">CL</div>Clara L.</div>
+            <div class="doc-item__date">10 juin 24</div>
+          </div>
+
+          <div class="doc-item">
+            <div class="doc-item__icon"><i data-lucide="file-text"></i></div>
+            <div>
+              <div class="doc-item__title">PV d'AG Extraordinaire — Augmentation cotisation</div>
+              <div class="doc-item__sub">
+                <span>PDF · 4 pages</span>
+                <span>Mandat 24–25</span>
+                <span><code style="font-family:'JetBrains Mono',monospace;font-size:11px">PV-AG-2025-002</code></span>
+              </div>
+            </div>
+            <span class="badge badge--success"><span class="dot"></span>Signé</span>
+            <div class="doc-item__author"><div class="avatar avatar--c3" style="width:22px;height:22px;font-size:10px">JV</div>Jules V.</div>
+            <div class="doc-item__date">22 fév 25</div>
+          </div>
+
+          <div class="doc-item">
+            <div class="doc-item__icon"><i data-lucide="file-check-2"></i></div>
+            <div>
+              <div class="doc-item__title">PV d'AG Ordinaire 2022–2023</div>
+              <div class="doc-item__sub">
+                <span>PDF · 8 pages</span>
+                <span>Mandat 22–23</span>
+              </div>
+            </div>
+            <span class="badge"><span class="dot"></span>Archivé</span>
+            <div class="doc-item__author"><div class="avatar avatar--c5" style="width:22px;height:22px;font-size:10px">AT</div>Adam T.</div>
+            <div class="doc-item__date">18 juin 23</div>
+          </div>
+
+          <div class="pagination" style="border-top: 1px solid var(--border)">
+            <span>Affichage <strong>1–7</strong> sur 28 PV d'AG</span>
+            <div class="row" style="gap:4px">
+              <button class="page-btn page-btn--muted" style="width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:#fff;display:inline-grid;place-items:center;color:var(--text-3)"><i data-lucide="chevron-left" style="width:14px;height:14px"></i></button>
+              <button class="page-btn page-btn--active" style="width:28px;height:28px;border-radius:6px;background:var(--primary);color:#fff;border:1px solid var(--primary)">1</button>
+              <button class="page-btn" style="width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:#fff">2</button>
+              <button class="page-btn" style="width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:#fff">3</button>
+              <button class="page-btn" style="width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:#fff;display:inline-grid;place-items:center"><i data-lucide="chevron-right" style="width:14px;height:14px"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== Preview pane ========== -->
+        <aside class="preview">
+          <div class="preview__head">
+            <div class="row" style="gap:8px;margin-bottom:6px">
+              <span class="badge badge--primary">PV d'AG</span>
+              <span class="badge badge--success"><span class="dot"></span>Signé</span>
+              <div class="spacer"></div>
+              <button class="icon-btn" style="width:28px;height:28px"><i data-lucide="bookmark"></i></button>
+              <button class="icon-btn" style="width:28px;height:28px"><i data-lucide="more-horizontal"></i></button>
+            </div>
+            <div class="preview__title">PV d'AG Extraordinaire — Modification des statuts</div>
+            <div class="preview__sub">JEECE · 28 avril 2026 · ECE Paris, amphi A</div>
+          </div>
+
+          <div class="preview__doc">
+            <span class="preview__page-pill">1 / 6</span>
+            <div class="preview__doc-head">JEECE · ECE Paris · Mandat 2025–2026</div>
+            <div class="preview__doc-title">Procès-verbal d'Assemblée Générale Extraordinaire</div>
+            <div class="preview__doc-line preview__doc-line--mid"></div>
+            <div class="preview__doc-line preview__doc-line--short"></div>
+            <div class="preview__doc-block">
+              <div class="preview__doc-line"></div>
+              <div class="preview__doc-line preview__doc-line--mid"></div>
+              <div class="preview__doc-line preview__doc-line--short"></div>
+              <div class="preview__doc-line"></div>
+              <div class="preview__doc-line preview__doc-line--mid"></div>
+            </div>
+            <div class="preview__doc-block">
+              <div class="preview__doc-line"></div>
+              <div class="preview__doc-line preview__doc-line--mid"></div>
+              <div class="preview__doc-line"></div>
+              <div class="preview__doc-line preview__doc-line--short"></div>
+            </div>
+            <div class="preview__doc-stamp">JEECE<br/>signé<br/>28-04-26</div>
+          </div>
+
+          <div class="preview__meta">
+            <div class="meta-row"><span class="meta-row__k">Référence</span><span class="meta-row__v"><code>PV-AG-2026-002</code></span></div>
+            <div class="meta-row"><span class="meta-row__k">Catégorie</span><span class="meta-row__v">PV d'AG Extraordinaire</span></div>
+            <div class="meta-row"><span class="meta-row__k">Mandat</span><span class="meta-row__v">2025–2026</span></div>
+            <div class="meta-row"><span class="meta-row__k">Format</span><span class="meta-row__v">PDF · 6 pages · 412 Ko</span></div>
+            <div class="meta-row"><span class="meta-row__k">Créé par</span><span class="meta-row__v row"><div class="avatar avatar--c1" style="width:18px;height:18px;font-size:9px">LB</div>Léa Bernard</span></div>
+            <div class="meta-row"><span class="meta-row__k">Signé par</span><span class="meta-row__v row" style="flex-wrap:wrap;gap:4px">
+              <div class="avatar avatar--c2" style="width:18px;height:18px;font-size:9px">HM</div>
+              <div class="avatar avatar--c1" style="width:18px;height:18px;font-size:9px">LB</div>
+              <div class="avatar avatar--c4" style="width:18px;height:18px;font-size:9px">CR</div>
+              <span class="muted">+2</span>
+            </span></div>
+            <div class="meta-row"><span class="meta-row__k">Tags</span><span class="meta-row__v"><span class="badge">statuts</span> <span class="badge">vote</span> <span class="badge">CNJE</span></span></div>
+          </div>
+
+          <div class="preview__actions">
+            <button class="btn"><i data-lucide="external-link"></i>Ouvrir</button>
+            <button class="btn btn--primary"><i data-lucide="download"></i>Télécharger</button>
+          </div>
+
+          <div class="audit-mini">
+            <div class="audit-mini__h">Historique</div>
+            <div class="audit-mini__row">
+              <div class="avatar avatar--c1" style="width:22px;height:22px;font-size:10px">LB</div>
+              <div>
+                <div><strong>Léa Bernard</strong> a finalisé et signé le document.</div>
+                <div class="audit-mini__time">28 avr 26 · 19:14</div>
+              </div>
+            </div>
+            <div class="audit-mini__row">
+              <div class="avatar avatar--c2" style="width:22px;height:22px;font-size:10px">HM</div>
+              <div>
+                <div><strong>Hugo Martin</strong> a signé numériquement.</div>
+                <div class="audit-mini__time">28 avr 26 · 18:52</div>
+              </div>
+            </div>
+            <div class="audit-mini__row">
+              <div class="avatar avatar--c1" style="width:22px;height:22px;font-size:10px">LB</div>
+              <div>
+                <div><strong>Léa Bernard</strong> a généré le doc depuis <em>tpl-pv-ag-extra-v2</em>.</div>
+                <div class="audit-mini__time">28 avr 26 · 16:30</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script>lucide.createIcons({ attrs: { 'stroke-width': 1.6 } });</script>
+</body>
+</html>

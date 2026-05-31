@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>SG · Fiche membre — JEECE</title>
+<meta name="viewport" content="width=1280" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="sg.css" />
+<style>
+  .member-head { display: grid; grid-template-columns: auto 1fr auto; gap: 18px; align-items: center; padding: 20px; }
+  .member-head__avatar { position: relative; }
+  .member-head__avatar .status-dot { position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; border-radius: 999px; background: var(--success); border: 2.5px solid #fff; }
+  .member-head__name { display: flex; align-items: center; gap: 10px; }
+  .member-head__name h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+  .member-head__contact { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; font-size: 12.5px; color: var(--text-2); }
+  .member-head__contact .row { gap: 5px; }
+  .member-head__contact .lucide { width: 13px; height: 13px; color: var(--text-3); }
+  .member-head__actions { display: flex; gap: 8px; }
+  .substats { display: grid; grid-template-columns: repeat(4,1fr); border-top: 1px solid var(--border); }
+  .substats > div { padding: 14px 18px; border-right: 1px solid var(--border); }
+  .substats > div:last-child { border-right: 0; }
+  .substats__label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .substats__value { font-size: 18px; font-weight: 600; letter-spacing: -0.015em; }
+
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin: 18px 0 14px; }
+  .tab { padding: 9px 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; cursor: pointer; font-size: 13px; color: var(--text-2); margin-bottom: -1px; display: inline-flex; align-items: center; gap: 6px; }
+  .tab--active { color: var(--text); border-bottom-color: var(--primary); font-weight: 500; }
+  .tab .count { font-size: 11px; color: var(--text-3); padding: 1px 6px; border-radius: 999px; background: #F3F4F6; }
+  .tab--active .count { background: var(--primary-soft); color: var(--primary); }
+
+  .grid-3 { display: grid; grid-template-columns: 1.05fr 1fr 1fr; gap: 12px; }
+
+  .field { display: grid; grid-template-columns: 130px 1fr; padding: 9px 16px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .field:last-child { border-bottom: 0; }
+  .field__k { color: var(--text-2); }
+  .field__v { color: var(--text); }
+  .field__v code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #F3F4F6; padding: 1px 5px; border-radius: 4px; }
+
+  .timeline { padding: 14px 16px; }
+  .tl-item { position: relative; padding-left: 22px; padding-bottom: 14px; }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-item::before { content:''; position: absolute; left: 4px; top: 5px; width: 9px; height: 9px; border-radius: 999px; background: var(--primary); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--border); }
+  .tl-item--past::before { background: var(--text-3); }
+  .tl-item::after { content:''; position: absolute; left: 8px; top: 16px; bottom: 0; width: 1px; background: var(--border); }
+  .tl-item:last-child::after { display: none; }
+  .tl-item__title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .tl-item__sub { font-size: 11.5px; color: var(--text-2); }
+  .tl-item__tags { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+
+  .docs-row { display: grid; grid-template-columns: auto 1fr auto auto; gap: 10px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+  .docs-row:last-child { border-bottom: 0; }
+  .doc-icon { width: 32px; height: 32px; border-radius: 6px; background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; flex: 0 0 32px; }
+  .doc-icon .lucide { width: 15px; height: 15px; }
+  .docs-row__title { font-weight: 500; color: var(--text); }
+  .docs-row__sub { color: var(--text-2); font-size: 11px; margin-top: 2px; }
+
+  .audit { padding: 10px 16px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; font-size: 12.5px; }
+  .audit:last-child { border-bottom: 0; }
+  .audit__time { color: var(--text-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .audit__action { color: var(--text); }
+  .audit__action em { color: var(--text-2); font-style: normal; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar__logo">
+      <div class="sidebar__logo-mark">JE</div>
+      <div>
+        <div class="sidebar__logo-name">JEECE · SG</div>
+        <div class="sidebar__logo-sub">Mandat 2025–2026</div>
+      </div>
+    </div>
+    <a class="sidebar__item" href="01-dashboard.html"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></a>
+    <a class="sidebar__item" href="02-annuaire.html"><i data-lucide="users"></i><span>Annuaire</span><span class="sidebar__item-count">84</span></a>
+    <a class="sidebar__item sidebar__item--active" href="03-fiche-membre.html"><i data-lucide="user"></i><span>Fiche membre</span></a>
+    <a class="sidebar__item" href="04-bibliotheque.html"><i data-lucide="library"></i><span>Bibliothèque docs</span><span class="sidebar__item-count">312</span></a>
+    <div class="sidebar__group-label">Gestion</div>
+    <a class="sidebar__item" href="#"><i data-lucide="file-plus-2"></i><span>Génération docs</span></a>
+    <a class="sidebar__item" href="#"><i data-lucide="bell-ring"></i><span>Échéances</span><span class="sidebar__item-count">7</span></a>
+    <a class="sidebar__item" href="#"><i data-lucide="history"></i><span>Audit trail</span></a>
+    <a class="sidebar__item" href="#"><i data-lucide="settings"></i><span>Paramètres</span></a>
+    <div class="sidebar__user">
+      <div class="avatar avatar--c1">LB</div>
+      <div class="sidebar__user-meta">
+        <div class="sidebar__user-name">Léa Bernard</div>
+        <div class="sidebar__user-role">Secrétaire Général</div>
+      </div>
+      <i data-lucide="chevron-down" class="muted-2"></i>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="header">
+      <nav class="crumbs">
+        <span>Espace SG</span>
+        <span class="crumbs__sep">/</span>
+        <a href="02-annuaire.html" class="muted">Annuaire</a>
+        <span class="crumbs__sep">/</span>
+        <span class="crumbs__last">Hugo Martin</span>
+      </nav>
+      <div class="header__search">
+        <i data-lucide="search"></i><span>Rechercher membre, doc, mandat…</span><kbd>⌘K</kbd>
+      </div>
+      <div class="header__actions">
+        <button class="icon-btn"><i data-lucide="help-circle"></i></button>
+        <button class="icon-btn"><i data-lucide="bell"></i><span class="icon-btn__dot"></span></button>
+        <div class="avatar avatar--c1">LB</div>
+      </div>
+    </header>
+
+    <section class="page">
+      <!-- Header card -->
+      <div class="card" style="margin-bottom:8px">
+        <div class="member-head">
+          <div class="member-head__avatar">
+            <div class="avatar avatar--lg avatar--c2">HM</div>
+            <span class="status-dot" title="Actif"></span>
+          </div>
+          <div>
+            <div class="member-head__name">
+              <h1>Hugo Martin</h1>
+              <span class="badge badge--success"><span class="dot"></span>Actif</span>
+              <span class="badge badge--primary">Présidence</span>
+              <span class="badge">Mandat 25–26</span>
+            </div>
+            <div class="muted" style="margin-top:4px">Président JEECE · ECE Paris · Promo 2025 · membre depuis sept. 2023</div>
+            <div class="member-head__contact">
+              <span class="row"><i data-lucide="mail"></i>hugo.martin@jeece.fr</span>
+              <span class="row"><i data-lucide="phone"></i>+33 6 12 90 22 18</span>
+              <span class="row"><i data-lucide="map-pin"></i>Paris 11e</span>
+              <span class="row"><i data-lucide="linkedin"></i>linkedin.com/in/hmartin</span>
+              <span class="row"><i data-lucide="hash"></i><code style="font-family:'JetBrains Mono',monospace;font-size:11.5px">JE-2023-0042</code></span>
+            </div>
+          </div>
+          <div class="member-head__actions">
+            <button class="btn"><i data-lucide="mail"></i>Contacter</button>
+            <button class="btn"><i data-lucide="file-plus-2"></i>Générer un doc</button>
+            <button class="btn btn--primary"><i data-lucide="edit-3"></i>Modifier</button>
+          </div>
+        </div>
+        <div class="substats">
+          <div>
+            <div class="substats__label">Mandats effectués</div>
+            <div class="substats__value tabular">3</div>
+          </div>
+          <div>
+            <div class="substats__label">Documents personnels</div>
+            <div class="substats__value tabular">12</div>
+          </div>
+          <div>
+            <div class="substats__label">Dernière connexion</div>
+            <div class="substats__value">Il y a 2h</div>
+          </div>
+          <div>
+            <div class="substats__label">Conformité dossier</div>
+            <div class="substats__value" style="color:var(--success)">Complet · 8/8</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab tab--active"><i data-lucide="user"></i>Identité</button>
+        <button class="tab"><i data-lucide="briefcase"></i>Parcours JEECE <span class="count">3</span></button>
+        <button class="tab"><i data-lucide="file-text"></i>Documents <span class="count">12</span></button>
+        <button class="tab"><i data-lucide="history"></i>Audit trail <span class="count">28</span></button>
+        <button class="tab"><i data-lucide="shield-check"></i>Permissions</button>
+      </div>
+
+      <!-- Body grid -->
+      <div class="grid-3">
+        <!-- Identity -->
+        <div class="card">
+          <div class="card__head">
+            <div class="card__title">Identité complète</div>
+            <div class="spacer"></div>
+            <button class="btn btn--ghost btn--sm"><i data-lucide="edit-3"></i>Éditer</button>
+          </div>
+          <div>
+            <div class="field"><div class="field__k">Prénom</div><div class="field__v">Hugo</div></div>
+            <div class="field"><div class="field__k">Nom</div><div class="field__v">Martin</div></div>
+            <div class="field"><div class="field__k">Date de naissance</div><div class="field__v">14 mars 2003</div></div>
+            <div class="field"><div class="field__k">Email perso</div><div class="field__v">hugo.martin04@gmail.com</div></div>
+            <div class="field"><div class="field__k">Email JEECE</div><div class="field__v">hugo.martin@jeece.fr</div></div>
+            <div class="field"><div class="field__k">Téléphone</div><div class="field__v">+33 6 12 90 22 18</div></div>
+            <div class="field"><div class="field__k">Adresse</div><div class="field__v">12 rue Oberkampf, 75011 Paris</div></div>
+            <div class="field"><div class="field__k">N° étudiant</div><div class="field__v"><code>ECE-22014099</code></div></div>
+            <div class="field"><div class="field__k">École</div><div class="field__v">ECE Paris</div></div>
+            <div class="field"><div class="field__k">Promotion</div><div class="field__v">M1 · diplôme 2025</div></div>
+            <div class="field"><div class="field__k">Identifiant JEECE</div><div class="field__v"><code>JE-2023-0042</code></div></div>
+          </div>
+        </div>
+
+        <!-- Parcours timeline -->
+        <div class="card">
+          <div class="card__head">
+            <div class="card__title">Parcours JEECE</div>
+            <div class="card__sub" style="margin-left:8px">3 mandats · depuis sept. 2023</div>
+          </div>
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-item__title">Président · Mandat 2025–2026</div>
+              <div class="tl-item__sub">Sept. 2025 → en cours</div>
+              <div class="tl-item__tags">
+                <span class="badge badge--primary">Présidence</span>
+                <span class="badge badge--accent">Élu en AG</span>
+                <span class="badge">14 missions supervisées</span>
+              </div>
+            </div>
+            <div class="tl-item tl-item--past">
+              <div class="tl-item__title">VP Commercial · Mandat 2024–2025</div>
+              <div class="tl-item__sub">Sept. 2024 → août 2025</div>
+              <div class="tl-item__tags">
+                <span class="badge">Commercial</span>
+                <span class="badge">CA 38 240 €</span>
+              </div>
+            </div>
+            <div class="tl-item tl-item--past">
+              <div class="tl-item__title">Chargé d'affaires · Mandat 2023–2024</div>
+              <div class="tl-item__sub">Oct. 2023 → août 2024</div>
+              <div class="tl-item__tags">
+                <span class="badge">Commercial</span>
+                <span class="badge">7 missions</span>
+              </div>
+            </div>
+          </div>
+          <div class="card__foot">
+            <div class="row" style="font-size:12px;color:var(--text-2)">
+              <i data-lucide="award" style="width:14px;height:14px;color:var(--accent)"></i>
+              <span>Membre exemplaire · 0 incident · 100% présence Bureau</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Documents personnels -->
+        <div class="card">
+          <div class="card__head">
+            <div class="card__title">Documents personnels</div>
+            <div class="card__sub" style="margin-left:8px">12 docs</div>
+            <div class="spacer"></div>
+            <button class="btn btn--ghost btn--sm"><i data-lucide="plus"></i>Ajouter</button>
+          </div>
+          <div>
+            <div class="docs-row">
+              <div class="doc-icon"><i data-lucide="file-text"></i></div>
+              <div>
+                <div class="docs-row__title">Attestation de fonction · Président</div>
+                <div class="docs-row__sub">PDF · 1 page · généré 12/09/25</div>
+              </div>
+              <span class="badge badge--success"><span class="dot"></span>Signée</span>
+              <button class="icon-btn" style="width:28px;height:28px"><i data-lucide="download"></i></button>
+            </div>
+            <div class="docs-row">
+              <div class="doc-icon"><i data-lucide="file-signature"></i></div>
+              <div>
+                <div class="docs-row__title">Charte du membre 25–26</div>
+                <div class="docs-row__sub">PDF · 4 pages · signée 14/09/25</div>
+              </div>
+              <span class="badge badge--success"><span class="dot"></span>Signée</span>
+              <button class="icon-btn" style="width:28px;height:28px"><i data-lucide="download"></i></button>
+            </div>
+            <div class="docs-row">
+              <div class="doc-icon"><i data-lucide="id-card"></i></div>
+              <div>
+                <div class="docs-row__title">Carte étudiante 25–26</div>
+                <div class="docs-row__sub">JPG · vérifiée 12/09/25</div>
+              </div>
+              <span class="badge badge--success"><span class="dot"></span>Vérif.</span>
+              <button class="icon-btn" style="width:28px;height:28px"><i data-lucide="download"></i></button>
+            </div>
+            <div class="docs-row">
+              <div class="doc-icon"><i data-lucide="banknote"></i></div>
+              <div>
+                <div class="docs-row__title">RIB</div>
+                <div class="docs-row__sub">PDF · ajouté 02/10/25</div>
+              </div>
+              <span class="badge"><span class="dot"></span>Privé</span>
+              <button class="icon-btn" style="width:28px;height:28px"><i data-lucide="download"></i></button>
+            </div>
+            <div class="docs-row">
+              <div class="doc-icon"><i data-lucide="shield"></i></div>
+              <div>
+                <div class="docs-row__title">Attestation responsabilité civile</div>
+                <div class="docs-row__sub">PDF · MAIF · valide jusqu'au 31/08/26</div>
+              </div>
+              <span class="badge badge--warn"><span class="dot"></span>J−112</span>
+              <button class="icon-btn" style="width:28px;height:28px"><i data-lucide="download"></i></button>
+            </div>
+            <div class="docs-row">
+              <div class="doc-icon"><i data-lucide="file-check-2"></i></div>
+              <div>
+                <div class="docs-row__title">PV élection Président · 12/09/25</div>
+                <div class="docs-row__sub">PDF · extrait AG · 2 pages</div>
+              </div>
+              <span class="badge badge--success"><span class="dot"></span>Signée</span>
+              <button class="icon-btn" style="width:28px;height:28px"><i data-lucide="download"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Audit trail -->
+      <div class="card" style="margin-top:12px">
+        <div class="card__head">
+          <div class="card__title">Audit trail · modifications de la fiche</div>
+          <div class="card__sub" style="margin-left:8px">28 entrées · 90 derniers jours</div>
+          <div class="spacer"></div>
+          <button class="btn btn--ghost btn--sm"><i data-lucide="filter"></i>Filtrer</button>
+          <button class="btn btn--ghost btn--sm"><i data-lucide="download"></i>Exporter</button>
+        </div>
+        <div>
+          <div class="audit">
+            <div class="avatar" style="width:24px;height:24px;font-size:11px" class="avatar--c1">LB</div>
+            <div class="audit__action"><strong>Léa Bernard</strong> a généré <em>attestation-fonction-president.pdf</em> depuis le template <em>v3</em></div>
+            <span class="audit__time">11 mai · 09:14</span>
+          </div>
+          <div class="audit">
+            <div class="avatar avatar--c5" style="width:24px;height:24px;font-size:11px">PD</div>
+            <div class="audit__action"><strong>Paul Delcourt</strong> a modifié le champ <em>adresse</em> · ancienne valeur masquée par RBAC</div>
+            <span class="audit__time">8 mai · 17:02</span>
+          </div>
+          <div class="audit">
+            <div class="avatar avatar--c1" style="width:24px;height:24px;font-size:11px">LB</div>
+            <div class="audit__action"><strong>Léa Bernard</strong> a ajouté <em>attestation-rc-maif.pdf</em> à la catégorie <em>assurance</em></div>
+            <span class="audit__time">2 mai · 11:38</span>
+          </div>
+          <div class="audit">
+            <div class="avatar avatar--c2" style="width:24px;height:24px;font-size:11px">HM</div>
+            <div class="audit__action"><strong>Hugo Martin</strong> (lui-même) a téléchargé <em>charte-membre-25-26.pdf</em></div>
+            <span class="audit__time">28 avr · 14:21</span>
+          </div>
+          <div class="audit">
+            <div class="avatar avatar--c1" style="width:24px;height:24px;font-size:11px">LB</div>
+            <div class="audit__action"><strong>Léa Bernard</strong> a changé le statut <em>Postulant → Actif</em></div>
+            <span class="audit__time">12 sept 25 · 09:00</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script>lucide.createIcons({ attrs: { 'stroke-width': 1.6 } });</script>
+</body>
+</html>

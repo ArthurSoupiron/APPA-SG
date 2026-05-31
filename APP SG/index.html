@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>App RDI — Maquettes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  html, body, #root { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Geist', system-ui, sans-serif; background: #f0eee9; color: #14201A; }
+  * { box-sizing: border-box; }
+  ::selection { background: #D8E84C; color: #14201A; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="app-shell.jsx"></script>
+<script type="text/babel" src="screen-dashboard.jsx"></script>
+<script type="text/babel" src="screen-pipeline.jsx"></script>
+<script type="text/babel" src="screen-intervenant.jsx"></script>
+<script type="text/babel" src="screen-workflow-es.jsx"></script>
+
+<script type="text/babel">
+const ARTBOARD_W = 1440;
+const ARTBOARD_H = 900;
+
+const App = () => (
+  <DesignCanvas>
+    <DCSection
+      id="rdi-screens"
+      title="App RDI · 4 écrans clés"
+      subtitle="Mandat 25–26 · Dashboard, Pipeline candidatures, Fiche intervenant, Workflow ES"
+    >
+      <DCArtboard id="dashboard" label="01 · Dashboard RDI" width={ARTBOARD_W} height={ARTBOARD_H}>
+        <DashboardScreen />
+      </DCArtboard>
+      <DCArtboard id="pipeline" label="02 · Pipeline (Kanban)" width={ARTBOARD_W} height={ARTBOARD_H}>
+        <PipelineScreen />
+      </DCArtboard>
+      <DCArtboard id="intervenant" label="03 · Fiche intervenant" width={ARTBOARD_W} height={ARTBOARD_H}>
+        <IntervenantScreen />
+      </DCArtboard>
+      <DCArtboard id="workflow-es" label="04 · Workflow ES" width={ARTBOARD_W} height={ARTBOARD_H}>
+        <WorkflowEsScreen />
+      </DCArtboard>
+    </DCSection>
+  </DesignCanvas>
+);
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
