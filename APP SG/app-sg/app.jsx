@@ -36,9 +36,15 @@ const App = () => {
   } else if (route.name === 'conformite') {
     crumbs = [{ k: 'SG' }, { k: 'Conformité' }];
     body = <ScreenConformite navigate={navigate} />;
-  } else if (route.name === 'archives' || route.name === 'parametres') {
-    crumbs = [{ k: 'SG' }, { k: route.name === 'archives' ? 'Archives' : 'Paramètres' }];
-    body = <div className="page"><div className="card"><Empty icon="construction" title="Module en démo" sub="Cette section sera disponible prochainement." /></div></div>;
+  } else if (route.name === 'journal') {
+    crumbs = [{ k: 'SG' }, { k: "Journal d'audit" }];
+    body = <ScreenJournal navigate={navigate} />;
+  } else if (route.name === 'archives') {
+    crumbs = [{ k: 'SG' }, { k: 'Archives mandats' }];
+    body = <ScreenArchives navigate={navigate} />;
+  } else if (route.name === 'parametres') {
+    crumbs = [{ k: 'SG' }, { k: 'Paramètres' }];
+    body = <ScreenParametres navigate={navigate} />;
   } else {
     crumbs = [{ k: 'SG' }, { k: 'Tableau de bord' }];
     body = <ScreenDashboard navigate={navigate} />;
@@ -52,6 +58,7 @@ const App = () => {
         {body}
       </div>
       <ModalHost navigate={navigate} />
+      <ToastHost />
     </div>
   );
 };

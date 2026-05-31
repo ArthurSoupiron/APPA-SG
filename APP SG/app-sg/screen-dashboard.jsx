@@ -5,15 +5,13 @@ const ScreenDashboard = ({ navigate }) => {
   const incomplete = r.incomplete.filter(m => m.status !== 'alumni').slice(0, 5);
 
   // doc type distribution (GED)
-  const dist = [
-    { k: 'Comptes rendus', v: 142, tone: 'brand' },
-    { k: 'Contrats & conv.', v: 130, tone: 'info' },
-    { k: "Bulletins d'adhésion", v: 84, tone: 'lime' },
-    { k: 'Comptabilité', v: 64, tone: 'violet' },
-    { k: "PV d'AG", v: 31, tone: 'warn' },
-    { k: 'Préfecture', v: 23, tone: 'neutral' },
-  ];
-  const distMax = Math.max(...dist.map(d => d.v));
+  // répartition GED calculée depuis les vrais documents
+  const tones = ['brand', 'info', 'lime', 'violet', 'warn', 'neutral'];
+  const dist = GED_CATS.filter(c => c.id !== 'all')
+    .map((c, i) => ({ k: c.label, v: gedCount(c.id), tone: tones[i % tones.length] }))
+    .filter(d => d.v > 0)
+    .sort((a, b) => b.v - a.v);
+  const distMax = Math.max(1, ...dist.map(d => d.v));
   const toneColor = { brand: 'var(--brand)', info: 'var(--info)', lime: 'var(--lime)', violet: 'var(--violet)', warn: 'var(--warn)', neutral: 'var(--ink-3)' };
 
   return (
@@ -49,7 +47,7 @@ const ScreenDashboard = ({ navigate }) => {
               <div style={{ fontSize: 13, fontWeight: 600 }}>Dossiers conformes</div>
               <div style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>{r.complete} sur {r.membersTotal} membres</div>
               <div style={{ fontSize: 11.5, opacity: 0.8, marginTop: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
-                <i data-lucide="trending-up" style={{ width: 13, height: 13 }}></i>+5 pts ce mois
+                <i data-lucide="folder-search" style={{ width: 13, height: 13 }}></i>{r.incomplete.filter(m => m.status !== 'alumni').length} dossier(s) à compléter
               </div>
             </div>
           </div>
@@ -58,10 +56,10 @@ const ScreenDashboard = ({ navigate }) => {
 
       {/* KPI row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 13, marginBottom: 14 }}>
-        <Kpi icon="users" label="Membres centralisés" value={r.membersTotal + 71} sub={`${r.active + 68} actifs · 3 postulants`} trend="+6" />
-        <Kpi icon="folder-check" label="Dossiers complets" value={`${r.completePct}%`} sub={`${r.complete}/${r.membersTotal} conformes`} trend="+5 pts" tone="brand" />
-        <Kpi icon="files" label="Documents stockés" value="486" sub="GED sécurisée · cloud" trend="+38" tone="info" />
-        <Kpi icon="shield-check" label="Conformité CNJE" value="96%" sub="4 points à régulariser" trendTone="warn" trend="4 alertes" tone="warn" />
+        <Kpi icon="users" label="Membres centralisés" value={r.membersTotal} sub={`${r.active} actifs · ${MEMBERS.filter(m => m.status === 'pending').length} postulants`} />
+        <Kpi icon="folder-check" label="Dossiers complets" value={`${r.completePct}%`} sub={`${r.complete}/${r.membersTotal} conformes`} tone="brand" />
+        <Kpi icon="files" label="Documents stockés" value={String(DOCS.length)} sub="GED sécurisée · cloud" tone="info" />
+        <Kpi icon="shield-check" label="Conformité CNJE" value={`${conformityScore()}%`} sub={`${conformityOpen()} point(s) à régulariser`} trendTone="warn" trend={conformityOpen() ? `${conformityOpen()} alertes` : 'OK'} tone="warn" />
       </div>
 
       {/* main grid */}
@@ -132,7 +130,7 @@ const ScreenDashboard = ({ navigate }) => {
       {/* bottom grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 14 }}>
         {/* doc distribution */}
-        <Card title="Répartition de la GED" sub="486 documents par catégorie">
+        <Card title="Répartition de la GED" sub={`${DOCS.length} documents par catégorie`}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
             {dist.map(d => (
               <div key={d.k}>

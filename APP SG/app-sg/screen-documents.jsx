@@ -32,7 +32,7 @@ const ScreenDocuments = ({ navigate }) => {
       <div className="page__head">
         <div>
           <h1 className="page__title">Documents officiels — GED</h1>
-          <div className="page__sub">486 documents centralisés · stockage cloud chiffré · accès SSO tracé</div>
+          <div className="page__sub">{DOCS.length} documents centralisés · stockage cloud chiffré · accès SSO tracé</div>
         </div>
         <div className="page__actions">
           <Btn icon="download" onClick={exportDocsCSV}>Exporter</Btn>

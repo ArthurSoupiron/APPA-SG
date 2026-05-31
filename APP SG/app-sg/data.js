@@ -149,7 +149,7 @@ const SG_STORE_KEY = 'jeece-sg-store-v1';
 
 const sgPersist = () => {
   try {
-    localStorage.setItem(SG_STORE_KEY, JSON.stringify({ MEMBERS, DOCS, ACTIVITY, DEADLINES, CONFORMITE }));
+    localStorage.setItem(SG_STORE_KEY, JSON.stringify({ MEMBERS, DOCS, ACTIVITY, DEADLINES, CONFORMITE, DOC_TYPES, GED_CATS }));
   } catch (e) {
     // quota dépassé (souvent à cause de fichiers uploadés lourds) : on prévient
     if (e && e.name === 'QuotaExceededError') window.dispatchEvent(new Event('sg:quota'));
@@ -166,6 +166,8 @@ const sgHydrate = () => {
     if (Array.isArray(saved.ACTIVITY))   ACTIVITY.splice(0, ACTIVITY.length, ...saved.ACTIVITY);
     if (Array.isArray(saved.DEADLINES))  DEADLINES.splice(0, DEADLINES.length, ...saved.DEADLINES);
     if (Array.isArray(saved.CONFORMITE)) CONFORMITE.splice(0, CONFORMITE.length, ...saved.CONFORMITE);
+    if (Array.isArray(saved.DOC_TYPES))  DOC_TYPES.splice(0, DOC_TYPES.length, ...saved.DOC_TYPES);
+    if (Array.isArray(saved.GED_CATS))   GED_CATS.splice(0, GED_CATS.length, ...saved.GED_CATS);
   } catch (e) { /* données corrompues : on repart du seed */ }
 };
 
@@ -174,6 +176,9 @@ const sgCommit = () => { sgPersist(); window.dispatchEvent(new Event('sg:change'
 
 // réinitialise le store (utile pour la démo)
 const sgReset = () => { try { localStorage.removeItem(SG_STORE_KEY); } catch (e) {} location.reload(); };
+
+// toast sûr (window.toast défini dans components.jsx, chargé après data.js)
+const notify = (msg, tone) => { if (window.toast) window.toast(msg, tone); };
 
 // journalise une entrée dans l'audit trail (en tête de liste)
 const logActivity = (entry) => {
@@ -213,6 +218,7 @@ const _createMember = (data) => {
 const addMember = (data) => {
   const m = _createMember(data);
   logActivity({ who: 'lb', action: 'a créé le dossier de', target: `${m.first} ${m.last}`, ctx: 'nouveau membre', icon: 'user-plus', tone: 'brand' });
+  notify(`Dossier de ${m.first} ${m.last} créé`, 'ok');
   sgCommit();
   return m;
 };
@@ -224,6 +230,7 @@ const addMembersBatch = (list) => {
     .map(_createMember);
   if (!created.length) return [];
   logActivity({ who: 'lb', action: 'a importé', target: `${created.length} dossier(s) membre`, ctx: 'import CSV', icon: 'upload', tone: 'info' });
+  notify(`${created.length} membre(s) importé(s)`, 'ok');
   sgCommit();
   return created;
 };
@@ -268,6 +275,7 @@ const addGedDoc = (data) => {
   };
   DOCS.unshift(doc);
   logActivity({ who: doc.author, action: 'a déposé', target: doc.title, ctx: `catégorie ${(GED_CATS.find(c => c.id === cat) || {}).label || cat}`, icon: 'upload', tone: 'info' });
+  notify('Document déposé dans la GED', 'ok');
   sgCommit();
   return doc;
 };
@@ -289,6 +297,7 @@ const deleteMember = (id) => {
   const m = MEMBERS[i];
   MEMBERS.splice(i, 1);
   logActivity({ who: 'lb', action: 'a supprimé le dossier de', target: `${m.first} ${m.last}`, ctx: 'suppression définitive', icon: 'trash-2', tone: 'neutral' });
+  notify(`Dossier de ${m.first} ${m.last} supprimé`, 'warn');
   sgCommit();
 };
 
@@ -317,6 +326,7 @@ const deleteGedDoc = (id) => {
   const d = DOCS[i];
   DOCS.splice(i, 1);
   logActivity({ who: 'lb', action: 'a supprimé', target: d.title, ctx: 'GED', icon: 'trash-2', tone: 'neutral' });
+  notify('Document supprimé', 'warn');
   sgCommit();
 };
 
@@ -365,6 +375,46 @@ const deleteDeadline = (id) => {
   if (i >= 0) { DEADLINES.splice(i, 1); sgCommit(); }
 };
 
+// ---- Paramètres : types de pièces & catégories GED -----------------------
+const addDocType = ({ code, label, icon, required }) => {
+  const c = (code || '').trim().toUpperCase();
+  if (!c || DOC_TYPES.some(d => d.code === c)) return;
+  DOC_TYPES.push({ code: c, label: (label || c).trim(), icon: icon || 'file', required: !!required });
+  logActivity({ who: 'lb', action: 'a ajouté un type de pièce', target: label || c, ctx: 'paramètres', icon: 'settings', tone: 'neutral' });
+  sgCommit();
+};
+const removeDocType = (code) => {
+  const i = DOC_TYPES.findIndex(d => d.code === code);
+  if (i >= 0) { DOC_TYPES.splice(i, 1); sgCommit(); }
+};
+const toggleDocRequired = (code) => {
+  const d = DOC_TYPES.find(x => x.code === code);
+  if (d) { d.required = !d.required; sgCommit(); }
+};
+const addCat = ({ id, label, icon }) => {
+  const cid = (id || (label || '').toLowerCase().replace(/[^a-z0-9]+/g, '')).trim();
+  if (!cid || GED_CATS.some(c => c.id === cid)) return;
+  GED_CATS.push({ id: cid, label: (label || cid).trim(), icon: icon || 'folder', count: 0 });
+  logActivity({ who: 'lb', action: 'a ajouté une catégorie', target: label || cid, ctx: 'paramètres GED', icon: 'settings', tone: 'neutral' });
+  sgCommit();
+};
+const removeCat = (id) => {
+  if (id === 'all') return;
+  const i = GED_CATS.findIndex(c => c.id === id);
+  if (i >= 0) { GED_CATS.splice(i, 1); sgCommit(); }
+};
+
+// ---- Comptages dérivés (compteurs réels) ---------------------------------
+const gedCount = (catId) => catId === 'all' ? DOCS.length : DOCS.filter(d => d.cat === catId).length;
+// score de conformité global : points OK / total (checklist + dossiers complets)
+const conformityScore = () => {
+  const okChecks = CONFORMITE.filter(c => c.state === 'ok').length;
+  const dossiersOk = rollups().incomplete.length ? 0 : 1;
+  return Math.round(((okChecks + dossiersOk) / (CONFORMITE.length + 1)) * 100);
+};
+// nombre de points de conformité non encore conformes (pour la sidebar)
+const conformityOpen = () => CONFORMITE.filter(c => c.state !== 'ok').length + (rollups().incomplete.length ? 1 : 0);
+
 // hydrate dès le chargement du module (avant le 1er render)
 sgHydrate();
 DEADLINES.sort((a, b) => a.date.localeCompare(b.date));
@@ -380,8 +430,9 @@ const rollups = () => {
 
 Object.assign(window, {
   DOC_TYPES, GED_CATS, MEMBERS, DEADLINES, DOCS, ACTIVITY, STATUS_LABEL, CONFORMITE,
-  dossierStats, memberById, rollups, deadlineInfo,
+  dossierStats, memberById, rollups, deadlineInfo, gedCount, conformityScore, conformityOpen,
   sgCommit, sgReset, logActivity, addMember, addMembersBatch, setDocStatus, addGedDoc,
   updateMember, deleteMember, setGedStatus, toggleGedFav, deleteGedDoc,
   addMandate, endMandate, deleteMandate, advanceCheck, addDeadline, deleteDeadline,
+  addDocType, removeDocType, toggleDocRequired, addCat, removeCat,
 });

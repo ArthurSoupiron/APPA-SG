@@ -19,6 +19,9 @@ const useStore = () => {
 // Ouvre une modale globale, gérée par <ModalHost/> dans App.
 const openModal = (type, props = {}) => window.dispatchEvent(new CustomEvent('sg:modal', { detail: { type, props } }));
 
+// Affiche un toast (notification éphémère en bas d'écran), géré par <ToastHost/>.
+const toast = (msg, tone = 'ok') => window.dispatchEvent(new CustomEvent('sg:toast', { detail: { msg, tone } }));
+
 // ===== Utilitaires : téléchargement, CSV, modèles de documents =====
 const downloadBlob = (filename, content, type = 'text/plain;charset=utf-8') => {
   const blob = new Blob([content], { type });
@@ -226,12 +229,13 @@ const Bar = ({ pct, tone, height = 7 }) => (
 const NAV = [
   { id: 'dashboard', label: "Tableau de bord", icon: 'layout-dashboard' },
   { id: 'membres',   label: 'Membres', icon: 'users', count: () => MEMBERS.length },
-  { id: 'documents', label: 'Documents (GED)', icon: 'folder-open', count: () => 486 },
-  { id: 'conformite',label: 'Conformité', icon: 'shield-check', count: () => 4 },
+  { id: 'documents', label: 'Documents (GED)', icon: 'folder-open', count: () => DOCS.length },
+  { id: 'conformite',label: 'Conformité', icon: 'shield-check', count: () => conformityOpen() },
+  { id: 'journal',   label: "Journal d'audit", icon: 'history', count: () => ACTIVITY.length },
 ];
 const NAV_2 = [
   { id: 'archives', label: 'Archives mandats', icon: 'archive' },
-  { id: 'parametres', label: 'Paramètres & SSO', icon: 'settings' },
+  { id: 'parametres', label: 'Paramètres', icon: 'settings' },
 ];
 
 const Sidebar = ({ route, navigate }) => {
@@ -258,7 +262,8 @@ const Sidebar = ({ route, navigate }) => {
 
       <div className="nav-group">Système</div>
       {NAV_2.map(it => (
-        <a key={it.id} href="#" className="nav-item" onClick={(e) => e.preventDefault()} title="Démo">
+        <a key={it.id} href={`#/${it.id}`} className={cls('nav-item', active === it.id && 'nav-item--active')}
+          onClick={(e) => { e.preventDefault(); navigate(it.id); }}>
           <Icon name={it.icon} /><span style={{ flex: 1 }}>{it.label}</span>
         </a>
       ))}
@@ -702,6 +707,44 @@ const AddDeadlineModal = ({ onClose }) => {
   );
 };
 
+const NewDocTypeModal = ({ onClose }) => {
+  const [f, setF] = React.useState({ code: '', label: '', icon: 'file', required: 'true' });
+  const set = (k) => (v) => setF(s => ({ ...s, [k]: v }));
+  const valid = f.code.trim() && f.label.trim();
+  const submit = () => {
+    if (!valid) return;
+    if (DOC_TYPES.some(d => d.code === f.code.trim().toUpperCase())) { toast('Ce code existe déjà', 'warn'); return; }
+    addDocType({ code: f.code, label: f.label, icon: f.icon, required: f.required === 'true' });
+    toast('Type de pièce ajouté', 'ok');
+    onClose();
+  };
+  return (
+    <Modal icon="file-plus-2" title="Nouveau type de pièce" sub="Document officiel suivi dans les dossiers" onClose={onClose} width={440}
+      footer={<><Btn onClick={onClose}>Annuler</Btn><Btn kind="primary" icon="check" onClick={submit}>Ajouter</Btn></>}>
+      <div className="form-row">
+        <Field label="Code court" required half><TextField value={f.code} onChange={set('code')} placeholder="PASS" autoFocus /></Field>
+        <Field label="Icône (Lucide)" half><TextField value={f.icon} onChange={set('icon')} placeholder="file" /></Field>
+      </div>
+      <Field label="Libellé" required><TextField value={f.label} onChange={set('label')} placeholder="Passeport / pièce d'identité" /></Field>
+      <Field label="Caractère"><SelectField value={f.required} onChange={set('required')} options={[{ value: 'true', label: 'Obligatoire' }, { value: 'false', label: 'Optionnel' }]} /></Field>
+    </Modal>
+  );
+};
+
+const NewCatModal = ({ onClose }) => {
+  const [f, setF] = React.useState({ label: '', icon: 'folder' });
+  const set = (k) => (v) => setF(s => ({ ...s, [k]: v }));
+  const valid = f.label.trim();
+  const submit = () => { if (!valid) return; addCat({ label: f.label, icon: f.icon }); toast('Catégorie ajoutée', 'ok'); onClose(); };
+  return (
+    <Modal icon="folder-plus" title="Nouvelle catégorie GED" sub="Classement des documents officiels" onClose={onClose} width={440}
+      footer={<><Btn onClick={onClose}>Annuler</Btn><Btn kind="primary" icon="check" onClick={submit}>Ajouter</Btn></>}>
+      <Field label="Libellé" required><TextField value={f.label} onChange={set('label')} placeholder="Partenariats" autoFocus /></Field>
+      <Field label="Icône (Lucide)"><TextField value={f.icon} onChange={set('icon')} placeholder="folder" /></Field>
+    </Modal>
+  );
+};
+
 const ConfirmModal = ({ onClose, title, message, confirmLabel = 'Confirmer', danger, onConfirm }) => (
   <Modal icon={danger ? 'trash-2' : 'help-circle'} title={title} onClose={onClose} width={420}
     footer={<><Btn onClick={onClose}>Annuler</Btn>
@@ -710,6 +753,32 @@ const ConfirmModal = ({ onClose, title, message, confirmLabel = 'Confirmer', dan
     <div style={{ fontSize: 13.5, color: 'var(--ink-2)', lineHeight: 1.5 }}>{message}</div>
   </Modal>
 );
+
+// Hôte des toasts : empile les notifications éphémères, auto-disparition.
+const ToastHost = () => {
+  const [items, setItems] = React.useState([]);
+  useIcons();
+  React.useEffect(() => {
+    const onToast = (e) => {
+      const id = Date.now() + Math.random();
+      setItems(xs => [...xs, { id, ...e.detail }]);
+      setTimeout(() => setItems(xs => xs.filter(t => t.id !== id)), 3200);
+    };
+    window.addEventListener('sg:toast', onToast);
+    return () => window.removeEventListener('sg:toast', onToast);
+  }, []);
+  const ic = { ok: 'check-circle', info: 'info', warn: 'alert-triangle', danger: 'x-circle' };
+  return (
+    <div className="toast-host">
+      {items.map(t => (
+        <div key={t.id} className={cls('toast', `toast--${t.tone}`)}>
+          <Icon name={ic[t.tone] || 'bell'} style={{ width: 16, height: 16 }} />
+          <span>{t.msg}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 // Hôte des modales : écoute « sg:modal » et affiche la bonne modale.
 const ModalHost = ({ navigate }) => {
@@ -730,8 +799,10 @@ const ModalHost = ({ navigate }) => {
   if (modal.type === 'import')     return <ImportMembersModal onClose={close} {...p} />;
   if (modal.type === 'mandate')    return <AddMandateModal onClose={close} {...p} />;
   if (modal.type === 'deadline')   return <AddDeadlineModal onClose={close} {...p} />;
+  if (modal.type === 'docType')    return <NewDocTypeModal onClose={close} {...p} />;
+  if (modal.type === 'cat')        return <NewCatModal onClose={close} {...p} />;
   if (modal.type === 'confirm')    return <ConfirmModal onClose={close} {...p} />;
   return null;
 };
 
-Object.assign(window, { cls, useIcons, useStore, openModal, downloadBlob, toCSV, exportMembersCSV, exportDocsCSV, humanSize, FileDrop, FilePreview, Icon, Avatar, Badge, Btn, IconBtn, Card, Empty, Ring, Bar, Sidebar, Header, Modal, Field, TextField, SelectField, ModalHost });
+Object.assign(window, { cls, useIcons, useStore, openModal, toast, downloadBlob, toCSV, exportMembersCSV, exportDocsCSV, humanSize, FileDrop, FilePreview, Icon, Avatar, Badge, Btn, IconBtn, Card, Empty, Ring, Bar, Sidebar, Header, Modal, Field, TextField, SelectField, ModalHost, ToastHost });
