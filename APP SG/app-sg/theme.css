@@ -48,6 +48,52 @@
   --mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
+/* ===== Thème sombre ===== */
+:root[data-theme="dark"] {
+  --brand-050:  #14302130;
+  --brand-100:  #163a2640;
+  --brand-200:  #1d4a31;
+  --ok-bg:     #14301f;
+  --warn-bg:   #3a2c12;
+  --danger-bg: #3a1c1a;
+  --info-bg:   #15263a;
+  --violet-bg: #241d3a;
+  --lime-050:   #1e2a12;
+
+  --bg:        #0E1713;
+  --surface:   #14201A;
+  --surface-2: #18271F;
+  --border:    #233028;
+  --border-2:  #2D3D33;
+  --ink:       #E6EFE9;
+  --ink-2:     #9DB2A6;
+  --ink-3:     #6E8579;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow:    0 4px 16px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-lg: 0 12px 36px rgba(0,0,0,0.5);
+}
+:root[data-theme="dark"] body {
+  background: radial-gradient(1200px 600px at 80% -10%, rgba(124,196,46,0.05), transparent 60%), var(--bg);
+}
+:root[data-theme="dark"] .sidebar { background: linear-gradient(180deg, #14201A 0%, #111B16 100%); }
+:root[data-theme="dark"] .header { background: rgba(20,32,26,0.82); }
+:root[data-theme="dark"] .brand__name,
+:root[data-theme="dark"] .modal__title { color: var(--ink); }
+:root[data-theme="dark"] .av { border-color: rgba(255,255,255,0.08); box-shadow: 0 0 0 1px rgba(0,0,0,0.3); }
+:root[data-theme="dark"] select.input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%236E8579' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); }
+:root[data-theme="dark"] .doc-mock-line { background: #233028 !important; }
+
+/* bascule de thème */
+.theme-toggle {
+  margin-top: 14px; width: 100%; display: flex; align-items: center; gap: 9px;
+  padding: 9px 11px; border-radius: 10px; border: 1px solid var(--border-2);
+  background: var(--surface); color: var(--ink-2); font-size: 12.5px; font-weight: 500;
+  cursor: pointer; transition: background .15s, color .15s;
+}
+.theme-toggle:hover { background: var(--brand-050); color: var(--brand-700); }
+.theme-toggle .lucide { width: 15px; height: 15px; }
+
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {

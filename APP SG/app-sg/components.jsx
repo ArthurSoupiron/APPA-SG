@@ -233,6 +233,28 @@ const Bar = ({ pct, tone, height = 7 }) => (
   </div>
 );
 
+// ===== Thème clair/sombre (persisté) =====
+const THEME_KEY = 'jeece-sg-theme';
+const applyTheme = (t) => { document.documentElement.setAttribute('data-theme', t); };
+const initTheme = () => { try { applyTheme(localStorage.getItem(THEME_KEY) || 'light'); } catch (e) {} };
+initTheme();
+
+const ThemeToggle = () => {
+  const [dark, setDark] = React.useState(() => document.documentElement.getAttribute('data-theme') === 'dark');
+  const toggle = () => {
+    const t = dark ? 'light' : 'dark';
+    applyTheme(t);
+    try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+    setDark(!dark);
+  };
+  return (
+    <button className="theme-toggle" onClick={toggle} title={dark ? 'Passer en clair' : 'Passer en sombre'}>
+      <Icon name={dark ? 'sun' : 'moon'} style={{ width: 15, height: 15 }} />
+      <span>{dark ? 'Mode clair' : 'Mode sombre'}</span>
+    </button>
+  );
+};
+
 // ===== Sidebar =====
 const NAV = [
   { id: 'dashboard', label: "Tableau de bord", icon: 'layout-dashboard' },
@@ -281,6 +303,8 @@ const Sidebar = ({ route, navigate }) => {
         <div className="side-card__bar"><i style={{ width: `${r.completePct}%` }}></i></div>
         <div className="side-card__meta">{r.complete} / {r.membersTotal} dossiers conformes · {r.completePct}%</div>
       </div>
+
+      <ThemeToggle />
 
       <div className="side-user">
         <Avatar m={memberById('lb')} size={34} />
@@ -813,4 +837,4 @@ const ModalHost = ({ navigate }) => {
   return null;
 };
 
-Object.assign(window, { cls, useIcons, useStore, openModal, toast, doRelance, downloadBlob, toCSV, exportMembersCSV, exportDocsCSV, humanSize, FileDrop, FilePreview, Icon, Avatar, Badge, Btn, IconBtn, Card, Empty, Ring, Bar, Sidebar, Header, Modal, Field, TextField, SelectField, ModalHost, ToastHost });
+Object.assign(window, { cls, useIcons, useStore, openModal, toast, doRelance, downloadBlob, toCSV, exportMembersCSV, exportDocsCSV, humanSize, FileDrop, FilePreview, Icon, Avatar, Badge, Btn, IconBtn, Card, Empty, Ring, Bar, Sidebar, Header, Modal, Field, TextField, SelectField, ModalHost, ToastHost, ThemeToggle });
