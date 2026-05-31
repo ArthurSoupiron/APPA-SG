@@ -10,6 +10,8 @@ const parseHash = () => {
 const App = () => {
   const [route, setRoute] = React.useState(parseHash());
   const [search, setSearch] = React.useState('');
+  const [authed, setAuth] = React.useState(isAuthed());
+  const [onboard, setOnboard] = React.useState(false);
   useIcons();
   useStore(); // re-render l'app entière à chaque mutation persistée
 
@@ -21,6 +23,11 @@ const App = () => {
     return () => { window.removeEventListener('hashchange', onHash); window.removeEventListener('sg:quota', onQuota); };
   }, []);
   const navigate = (to) => { location.hash = `#/${to}`; };
+  const login = () => { setAuthed(true); setAuth(true); if (shouldOnboard()) setOnboard(true); };
+  const logout = () => { setAuthed(false); setAuth(false); };
+
+  // écran de connexion tant que non authentifié
+  if (!authed) return <Login onLogin={login} />;
 
   let body, crumbs;
   if (route.name === 'dossier') {
@@ -55,13 +62,14 @@ const App = () => {
 
   return (
     <div className="app">
-      <Sidebar route={route} navigate={navigate} />
+      <Sidebar route={route} navigate={navigate} onLogout={logout} onHelp={() => setOnboard(true)} />
       <div className="main">
         <Header crumbs={crumbs} search={search} setSearch={setSearch} navigate={navigate} />
         {body}
       </div>
       <ModalHost navigate={navigate} />
       <ToastHost />
+      {onboard && <Onboarding onClose={() => setOnboard(false)} />}
     </div>
   );
 };

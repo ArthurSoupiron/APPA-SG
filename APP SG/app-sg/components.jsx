@@ -269,7 +269,7 @@ const NAV_2 = [
   { id: 'parametres', label: 'Paramètres', icon: 'settings' },
 ];
 
-const Sidebar = ({ route, navigate }) => {
+const Sidebar = ({ route, navigate, onLogout, onHelp }) => {
   const active = route.name === 'dossier' ? 'membres' : route.name;
   const r = rollups();
   return (
@@ -305,7 +305,12 @@ const Sidebar = ({ route, navigate }) => {
         <div className="side-card__meta">{r.complete} / {r.membersTotal} dossiers conformes · {r.completePct}%</div>
       </div>
 
-      <ThemeToggle />
+      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+        <div style={{ flex: 1 }}><ThemeToggle /></div>
+        <button className="theme-toggle" style={{ width: 'auto', marginTop: 0 }} title="Aide / visite guidée" onClick={onHelp}>
+          <Icon name="help-circle" />
+        </button>
+      </div>
 
       <div className="side-user">
         <Avatar m={memberById('lb')} size={34} />
@@ -313,7 +318,9 @@ const Sidebar = ({ route, navigate }) => {
           <div className="side-user__name">Léa Bernard</div>
           <div className="side-user__role">Secrétaire Général</div>
         </div>
-        <Icon name="log-out" className="muted-2" style={{ width: 15, height: 15 }} />
+        <button className="iconbtn" title="Se déconnecter" style={{ width: 30, height: 30, border: 'none', background: 'transparent' }} onClick={onLogout}>
+          <Icon name="log-out" className="muted-2" style={{ width: 15, height: 15 }} />
+        </button>
       </div>
     </aside>
   );
@@ -809,6 +816,77 @@ const ConfirmModal = ({ onClose, title, message, confirmLabel = 'Confirmer', dan
   </Modal>
 );
 
+// ===== Écran de connexion (SSO factice) =====
+const AUTH_KEY = 'jeece-sg-auth';
+const isAuthed = () => { try { return localStorage.getItem(AUTH_KEY) === '1'; } catch (e) { return false; } };
+const setAuthed = (v) => { try { v ? localStorage.setItem(AUTH_KEY, '1') : localStorage.removeItem(AUTH_KEY); } catch (e) {} };
+
+const Login = ({ onLogin }) => {
+  useIcons();
+  return (
+    <div className="login">
+      <div className="login__card">
+        <div className="login__mark">JE</div>
+        <div className="login__title">JEECE · SG</div>
+        <div className="login__sub">Centralisation des dossiers membres & documents officiels</div>
+
+        <button className="login__sso" onClick={onLogin}>
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.6 2.4 30.1 0 24 0 14.6 0 6.4 5.4 2.5 13.3l7.9 6.2C12.3 13.2 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.2-.4-4.7H24v9h12.7c-.5 3-2.2 5.5-4.7 7.2l7.3 5.7c4.3-3.9 6.8-9.7 6.8-17.2z"/><path fill="#FBBC05" d="M10.4 28.5c-.5-1.5-.8-3.1-.8-4.5s.3-3 .8-4.5l-7.9-6.2C.9 16.5 0 20.1 0 24s.9 7.5 2.5 10.7l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.1 0 11.2-2 14.9-5.5l-7.3-5.7c-2 1.4-4.6 2.3-7.6 2.3-6.3 0-11.7-3.7-13.6-9l-7.9 6.2C6.4 42.6 14.6 48 24 48z"/></svg>
+          Continuer avec Google Workspace
+        </button>
+
+        <div className="login__or">connexion sécurisée</div>
+
+        <button className="btn btn--primary" style={{ width: '100%', justifyContent: 'center', padding: 12 }} onClick={onLogin}>
+          <Icon name="log-in" />Entrer dans l'espace SG
+        </button>
+
+        <div className="login__foot">
+          Accès réservé aux membres du Bureau · JEECE — ECE Paris<br />
+          Authentification de démonstration · aucune donnée transmise
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ===== Onboarding (visite guidée au 1er lancement) =====
+const ONB_KEY = 'jeece-sg-onboarded';
+const ONB_STEPS = [
+  { icon: 'folder-check', title: 'Bienvenue dans l\'espace SG', text: 'Tous les dossiers membres et documents officiels de la JEECE, centralisés et sécurisés au même endroit.' },
+  { icon: 'users', title: 'Suivez les dossiers membres', text: 'Chaque dossier suit ses pièces officielles (BA, charte, RIB…). La complétude se met à jour automatiquement, et vous pouvez relancer un membre en un clic.' },
+  { icon: 'folder-open', title: 'Gérez la GED', text: 'Déposez, signez, archivez et classez les documents officiels. Recherche ⌘K, favoris et filtres pour tout retrouver vite.' },
+  { icon: 'shield-check', title: 'Restez conforme', text: 'Checklist de conformité, échéances réglementaires avec J−X automatique et journal d\'audit complet. C\'est parti !' },
+];
+
+const Onboarding = ({ onClose }) => {
+  useIcons();
+  const [step, setStep] = React.useState(0);
+  const last = step === ONB_STEPS.length - 1;
+  const s = ONB_STEPS[step];
+  const finish = () => { try { localStorage.setItem(ONB_KEY, '1'); } catch (e) {} onClose(); };
+  return (
+    <div className="onb-overlay">
+      <div className="onb">
+        <div className="onb__art"><Icon name={s.icon} /></div>
+        <div className="onb__body">
+          <div className="onb__step">Étape {step + 1} / {ONB_STEPS.length}</div>
+          <div className="onb__title">{s.title}</div>
+          <div className="onb__text">{s.text}</div>
+        </div>
+        <div className="onb__foot">
+          <div className="onb__dots">{ONB_STEPS.map((_, i) => <span key={i} className={cls('onb__dot', i === step && 'onb__dot--on')}></span>)}</div>
+          <span className="spacer"></span>
+          <Btn kind="ghost" size="sm" onClick={finish}>Passer</Btn>
+          {!last ? <Btn kind="primary" size="sm" iconRight="arrow-right" onClick={() => setStep(step + 1)}>Suivant</Btn>
+                 : <Btn kind="primary" size="sm" icon="check" onClick={finish}>Commencer</Btn>}
+        </div>
+      </div>
+    </div>
+  );
+};
+const shouldOnboard = () => { try { return localStorage.getItem(ONB_KEY) !== '1'; } catch (e) { return false; } };
+
 // Hôte des toasts : empile les notifications éphémères, auto-disparition.
 const ToastHost = () => {
   const [items, setItems] = React.useState([]);
@@ -860,4 +938,4 @@ const ModalHost = ({ navigate }) => {
   return null;
 };
 
-Object.assign(window, { cls, useIcons, useStore, openModal, toast, doRelance, downloadBlob, toCSV, exportMembersCSV, exportDocsCSV, humanSize, FileDrop, FilePreview, Icon, Avatar, Badge, Btn, IconBtn, Card, Empty, Ring, Bar, Sidebar, Header, Modal, Field, TextField, SelectField, ModalHost, ToastHost, ThemeToggle });
+Object.assign(window, { cls, useIcons, useStore, openModal, toast, doRelance, downloadBlob, toCSV, exportMembersCSV, exportDocsCSV, humanSize, FileDrop, FilePreview, Icon, Avatar, Badge, Btn, IconBtn, Card, Empty, Ring, Bar, Sidebar, Header, Modal, Field, TextField, SelectField, ModalHost, ToastHost, ThemeToggle, Login, isAuthed, setAuthed, Onboarding, shouldOnboard });
