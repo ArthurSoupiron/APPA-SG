@@ -5,8 +5,8 @@ const ScreenDocuments = ({ navigate }) => {
   const [q, setQ] = React.useState('');
   const [sort, setSort] = React.useState('date');
   const [selId, setSelId] = React.useState('g1');
-  const [sel, setSel] = React.useState(() => new Set());
-  const toggleSel = (id) => setSel(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const [checked, setChecked] = React.useState(() => new Set());
+  const toggleSel = (id) => setChecked(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   let filtered = DOCS.slice();
   if (cat === 'fav') filtered = filtered.filter(d => d.fav);
@@ -71,17 +71,17 @@ const ScreenDocuments = ({ navigate }) => {
 
         {/* list */}
         <div className="card" style={{ padding: 0, overflow: 'hidden', alignSelf: 'start' }}>
-          {sel.size > 0 ? (
+          {checked.size > 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 14px', borderBottom: '1px solid var(--border)', background: 'var(--brand-050)' }}>
-              <Badge tone="brand">{sel.size} sélectionné(s)</Badge>
+              <Badge tone="brand">{checked.size} sélectionné(s)</Badge>
               <span className="spacer"></span>
-              <Btn size="sm" icon="archive" onClick={() => { [...sel].forEach(id => setGedStatus(id, 'archived')); setSel(new Set()); }}>Archiver</Btn>
+              <Btn size="sm" icon="archive" onClick={() => { [...checked].forEach(id => setGedStatus(id, 'archived')); setChecked(new Set()); }}>Archiver</Btn>
               <Btn size="sm" icon="trash-2" style={{ color: '#B23A33', borderColor: 'var(--danger-bg)' }} onClick={() => openModal('confirm', {
-                danger: true, title: `Supprimer ${sel.size} document(s) ?`, confirmLabel: 'Supprimer',
+                danger: true, title: `Supprimer ${checked.size} document(s) ?`, confirmLabel: 'Supprimer',
                 message: 'Les documents sélectionnés seront retirés définitivement de la GED.',
-                onConfirm: () => { deleteGedDocs([...sel]); setSel(new Set()); },
+                onConfirm: () => { deleteGedDocs([...checked]); setChecked(new Set()); },
               })}>Supprimer</Btn>
-              <IconBtn icon="x" title="Désélectionner" style={{ width: 28, height: 28 }} onClick={() => setSel(new Set())} />
+              <IconBtn icon="x" title="Désélectionner" style={{ width: 28, height: 28 }} onClick={() => setChecked(new Set())} />
             </div>
           ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 14px', borderBottom: '1px solid var(--border)' }}>
@@ -99,9 +99,9 @@ const ScreenDocuments = ({ navigate }) => {
               <div key={d.id} onClick={() => setSelId(d.id)} style={{
                 display: 'grid', gridTemplateColumns: 'auto auto 1fr auto', gap: 12, alignItems: 'center',
                 padding: '12px 15px', borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none', cursor: 'pointer',
-                background: sel.has(d.id) ? 'var(--brand-050)' : d.id === selId ? 'var(--brand-050)' : 'transparent',
+                background: checked.has(d.id) ? 'var(--brand-050)' : d.id === selId ? 'var(--brand-050)' : 'transparent',
               }}>
-                <input type="checkbox" aria-label={`Sélectionner ${d.title}`} checked={sel.has(d.id)}
+                <input type="checkbox" aria-label={`Sélectionner ${d.title}`} checked={checked.has(d.id)}
                   onClick={(e) => e.stopPropagation()} onChange={() => toggleSel(d.id)} />
                 <div style={{ width: 38, height: 38, borderRadius: 9, background: d.id === selId ? '#fff' : 'var(--surface-2)', display: 'grid', placeItems: 'center', color: d.id === selId ? 'var(--brand)' : 'var(--ink-2)', flex: '0 0 38px' }}>
                   <Icon name={docIcon(d)} style={{ width: 17, height: 17 }} />

@@ -13,6 +13,42 @@ const ScreenConformite = ({ navigate }) => {
   const okCount = checks.filter(c => c.state === 'ok').length;
   const pct = Math.round((okCount / checks.length) * 100);
 
+  const stateLabel = { ok: 'Conforme', pending: 'En cours', todo: 'À faire' };
+  const downloadReport = () => {
+    const today = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    const rows = checks.map(c => `<tr><td>${c.k}</td><td>${c.s || ''}</td><td style="white-space:nowrap">${stateLabel[c.state] || c.state}</td></tr>`).join('');
+    const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Rapport de conformité — JEECE</title>
+      <style>
+        body{font-family:Georgia,'Times New Roman',serif;color:#14271C;max-width:760px;margin:40px auto;padding:0 32px;line-height:1.5}
+        .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1A9E55;padding-bottom:16px;margin-bottom:24px}
+        .brand{font-family:Arial,sans-serif;font-weight:700;font-size:20px;color:#0F6E39}
+        .brand small{display:block;font-weight:400;font-size:11px;color:#587065}
+        .meta{font-family:Arial,sans-serif;font-size:12px;color:#587065;text-align:right}
+        h1{font-size:20px;margin:0 0 6px}
+        .score{font-family:Arial,sans-serif;font-size:14px;margin:0 0 20px;color:#0F6E39;font-weight:700}
+        table{width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:12.5px}
+        th{text-align:left;background:#EBF9F0;color:#0F6E39;padding:8px 10px;border-bottom:1px solid #B4E6C8}
+        td{padding:8px 10px;border-bottom:1px solid #E4ECE6;vertical-align:top}
+        @media print{body{margin:0}}
+      </style></head><body>
+      <div class="head"><div class="brand">JEECE<small>Junior-Entreprise · ECE Paris</small></div>
+        <div class="meta">Paris, le ${today}<br>Mandat 2025–2026</div></div>
+      <h1>Rapport de conformité</h1>
+      <p class="score">Score global : ${pct}% · ${okCount}/${checks.length} points conformes</p>
+      <table><thead><tr><th>Obligation</th><th>Détail</th><th>État</th></tr></thead><tbody>${rows}</tbody></table>
+      <p style="font-family:Arial,sans-serif;font-size:11px;color:#8AA093;margin-top:28px">Document généré automatiquement depuis l'espace SG · suivi du label CNJE.</p>
+    </body></html>`;
+    downloadBlob(`rapport-conformite-jeece-${new Date().toISOString().slice(0, 10)}.html`, html, 'text/html;charset=utf-8');
+    toast('Rapport de conformité téléchargé', 'ok');
+  };
+
+  const runAudit = () => {
+    logActivity({ who: 'lb', action: 'a lancé un audit de conformité', target: `score ${pct}%`, ctx: `${okCount}/${checks.length} points conformes`, icon: 'shield-check', tone: 'brand' });
+    sgCommit();
+    const open = checks.length - okCount;
+    toast(open ? `Audit terminé : ${open} point(s) à régulariser` : 'Audit terminé : tout est conforme ✅', open ? 'warn' : 'ok');
+  };
+
   return (
     <section className="page">
       <div className="page__head">
@@ -21,8 +57,8 @@ const ScreenConformite = ({ navigate }) => {
           <div className="page__sub">Suivi des obligations légales · label CNJE · audit du 15 juin 2026</div>
         </div>
         <div className="page__actions">
-          <Btn icon="download">Rapport de conformité</Btn>
-          <Btn kind="primary" icon="shield-check">Lancer un audit</Btn>
+          <Btn icon="download" onClick={downloadReport}>Rapport de conformité</Btn>
+          <Btn kind="primary" icon="shield-check" onClick={runAudit}>Lancer un audit</Btn>
         </div>
       </div>
 
