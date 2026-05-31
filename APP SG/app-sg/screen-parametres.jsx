@@ -1,6 +1,27 @@
 // JEECE · SG — Paramètres (types de pièces, catégories GED, données)
 const ScreenParametres = ({ navigate }) => {
   useIcons();
+  const fileRef = React.useRef();
+
+  const doExport = () => {
+    downloadBlob(`sauvegarde-jeece-sg-${new Date().toISOString().slice(0, 10)}.json`, exportBackup(), 'application/json');
+    toast('Sauvegarde téléchargée', 'ok');
+  };
+  const onImportFile = async (file) => {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const n = Array.isArray(data.MEMBERS) ? data.MEMBERS.length : 0;
+      openModal('confirm', {
+        title: 'Restaurer cette sauvegarde ?',
+        confirmLabel: 'Restaurer',
+        message: `Le fichier contient ${n} dossier(s) membre. Les données actuelles seront remplacées.`,
+        onConfirm: () => { try { importBackup(data); } catch (e) { toast('Fichier invalide', 'danger'); } },
+      });
+    } catch (e) { toast('Fichier JSON illisible', 'danger'); }
+    if (fileRef.current) fileRef.current.value = '';
+  };
 
   return (
     <section className="page">
@@ -76,13 +97,18 @@ const ScreenParametres = ({ navigate }) => {
           ))}
         </Card>
 
-        <Card title="Données de démonstration" sub="Stockées localement dans ce navigateur">
+        <Card title="Données & sauvegarde" sub="Stockées localement dans ce navigateur">
           <div style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5, marginBottom: 12 }}>
-            Toutes vos modifications (membres, documents, pièces, paramètres) sont enregistrées
-            automatiquement dans ce navigateur. Réinitialiser efface ces changements et restaure
-            le jeu de données d'origine.
+            Vos modifications sont enregistrées automatiquement dans ce navigateur. Exportez une
+            sauvegarde complète (JSON) pour la conserver ou la transférer sur un autre poste,
+            puis restaurez-la quand vous voulez.
           </div>
-          <Btn icon="rotate-ccw" onClick={() => openModal('confirm', { danger: true, title: 'Réinitialiser la démo ?', confirmLabel: 'Tout réinitialiser', message: "Toutes les modifications locales seront effacées et les données d'origine restaurées. Cette action est irréversible.", onConfirm: () => sgReset() })}>Réinitialiser la démo</Btn>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <Btn kind="primary" icon="download" onClick={doExport}>Exporter (JSON)</Btn>
+            <Btn icon="upload" onClick={() => fileRef.current && fileRef.current.click()}>Restaurer</Btn>
+            <input ref={fileRef} type="file" accept="application/json,.json" style={{ display: 'none' }} onChange={(e) => onImportFile(e.target.files[0])} />
+            <Btn icon="rotate-ccw" onClick={() => openModal('confirm', { danger: true, title: 'Réinitialiser la démo ?', confirmLabel: 'Tout réinitialiser', message: "Toutes les modifications locales seront effacées et les données d'origine restaurées. Cette action est irréversible.", onConfirm: () => sgReset() })}>Réinitialiser</Btn>
+          </div>
         </Card>
       </div>
     </section>

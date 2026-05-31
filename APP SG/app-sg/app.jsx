@@ -36,6 +36,9 @@ const App = () => {
   } else if (route.name === 'conformite') {
     crumbs = [{ k: 'SG' }, { k: 'Conformité' }];
     body = <ScreenConformite navigate={navigate} />;
+  } else if (route.name === 'stats') {
+    crumbs = [{ k: 'SG' }, { k: 'Statistiques' }];
+    body = <ScreenStats navigate={navigate} />;
   } else if (route.name === 'journal') {
     crumbs = [{ k: 'SG' }, { k: "Journal d'audit" }];
     body = <ScreenJournal navigate={navigate} />;

@@ -261,6 +261,7 @@ const NAV = [
   { id: 'membres',   label: 'Membres', icon: 'users', count: () => MEMBERS.length },
   { id: 'documents', label: 'Documents (GED)', icon: 'folder-open', count: () => DOCS.length },
   { id: 'conformite',label: 'Conformité', icon: 'shield-check', count: () => conformityOpen() },
+  { id: 'stats',     label: 'Statistiques', icon: 'bar-chart-3' },
   { id: 'journal',   label: "Journal d'audit", icon: 'history', count: () => ACTIVITY.length },
 ];
 const NAV_2 = [
@@ -339,8 +340,10 @@ const Header = ({ crumbs = [], search, setSearch, navigate }) => {
   const q = (search || '').trim().toLowerCase();
 
   const results = q ? [
-    ...MEMBERS.filter(m => `${m.first} ${m.last} ${m.role}`.toLowerCase().includes(q)).slice(0, 4).map(m => ({ type: 'membre', m })),
-    ...DOCS.filter(d => d.title.toLowerCase().includes(q) || d.ref.toLowerCase().includes(q)).slice(0, 3).map(d => ({ type: 'doc', d })),
+    ...MEMBERS.filter(m => `${m.first} ${m.last} ${m.role} ${m.pole} ${(STATUS_LABEL[m.status] || {}).k || ''}`.toLowerCase().includes(q)).slice(0, 4).map(m => ({ type: 'membre', m })),
+    ...DOCS.filter(d => d.title.toLowerCase().includes(q) || d.ref.toLowerCase().includes(q) || (d.tags || []).some(t => t.includes(q))).slice(0, 3).map(d => ({ type: 'doc', d })),
+    ...DEADLINES.filter(x => `${x.title} ${x.sub} ${x.kind}`.toLowerCase().includes(q)).slice(0, 2).map(x => ({ type: 'deadline', x })),
+    ...CONFORMITE.filter(c => `${c.k} ${c.s} ${c.ref || ''}`.toLowerCase().includes(q)).slice(0, 2).map(c => ({ type: 'check', c })),
   ] : [];
 
   React.useEffect(() => { setActive(0); }, [q]);
@@ -362,7 +365,9 @@ const Header = ({ crumbs = [], search, setSearch, navigate }) => {
 
   const go = (r) => {
     if (!r) return;
-    if (r.type === 'membre') navigate(`dossier/${r.m.id}`); else navigate('documents');
+    if (r.type === 'membre') navigate(`dossier/${r.m.id}`);
+    else if (r.type === 'doc') navigate('documents');
+    else if (r.type === 'deadline' || r.type === 'check') navigate('conformite');
     setSearch(''); setOpenSearch(false);
   };
   const onSearchKey = (e) => {
@@ -398,19 +403,37 @@ const Header = ({ crumbs = [], search, setSearch, navigate }) => {
         {openSearch && q && (
           <div className="pop" style={{ top: 'calc(100% + 6px)', left: 0, right: 0, padding: 6 }}>
             {results.length === 0 && <div style={{ padding: '10px 12px', color: 'var(--ink-3)', fontSize: 13 }}>Aucun résultat pour « {search} »</div>}
-            {results.map((r, i) => r.type === 'membre' ? (
-              <div key={i} className="pop__item" style={i === active ? { background: 'var(--brand-050)' } : null} onMouseEnter={() => setActive(i)} onClick={() => go(r)}>
-                <Avatar m={r.m} size={26} />
-                <div style={{ flex: 1 }}><div style={{ fontWeight: 550 }}>{r.m.first} {r.m.last}</div><div className="muted-2" style={{ fontSize: 11.5 }}>{r.m.role}</div></div>
-                <Badge tone="ok">Membre</Badge>
-              </div>
-            ) : (
-              <div key={i} className="pop__item" style={i === active ? { background: 'var(--brand-050)' } : null} onMouseEnter={() => setActive(i)} onClick={() => go(r)}>
-                <div style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--surface-2)', display: 'grid', placeItems: 'center', color: 'var(--ink-2)' }}><Icon name="file-text" style={{ width: 14, height: 14 }} /></div>
-                <div style={{ flex: 1 }}><div style={{ fontWeight: 550, fontSize: 12.5 }}>{r.d.title}</div><div className="muted-2 mono" style={{ fontSize: 11 }}>{r.d.ref}</div></div>
-                <Badge tone="info">Doc</Badge>
-              </div>
-            ))}
+            {results.map((r, i) => {
+              const hl = i === active ? { background: 'var(--brand-050)' } : null;
+              if (r.type === 'membre') return (
+                <div key={i} className="pop__item" style={hl} onMouseEnter={() => setActive(i)} onClick={() => go(r)}>
+                  <Avatar m={r.m} size={26} />
+                  <div style={{ flex: 1 }}><div style={{ fontWeight: 550 }}>{r.m.first} {r.m.last}</div><div className="muted-2" style={{ fontSize: 11.5 }}>{r.m.role} · {r.m.pole}</div></div>
+                  <Badge tone="ok">Membre</Badge>
+                </div>
+              );
+              if (r.type === 'doc') return (
+                <div key={i} className="pop__item" style={hl} onMouseEnter={() => setActive(i)} onClick={() => go(r)}>
+                  <div style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--surface-2)', display: 'grid', placeItems: 'center', color: 'var(--ink-2)' }}><Icon name="file-text" style={{ width: 14, height: 14 }} /></div>
+                  <div style={{ flex: 1 }}><div style={{ fontWeight: 550, fontSize: 12.5 }}>{r.d.title}</div><div className="muted-2 mono" style={{ fontSize: 11 }}>{r.d.ref}</div></div>
+                  <Badge tone="info">Doc</Badge>
+                </div>
+              );
+              if (r.type === 'deadline') return (
+                <div key={i} className="pop__item" style={hl} onMouseEnter={() => setActive(i)} onClick={() => go(r)}>
+                  <div style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--surface-2)', display: 'grid', placeItems: 'center', color: 'var(--ink-2)' }}><Icon name="calendar-clock" style={{ width: 14, height: 14 }} /></div>
+                  <div style={{ flex: 1 }}><div style={{ fontWeight: 550, fontSize: 12.5 }}>{r.x.title}</div><div className="muted-2" style={{ fontSize: 11 }}>{r.x.sub}</div></div>
+                  <Badge tone="warn">Échéance</Badge>
+                </div>
+              );
+              return (
+                <div key={i} className="pop__item" style={hl} onMouseEnter={() => setActive(i)} onClick={() => go(r)}>
+                  <div style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--surface-2)', display: 'grid', placeItems: 'center', color: 'var(--ink-2)' }}><Icon name="shield-check" style={{ width: 14, height: 14 }} /></div>
+                  <div style={{ flex: 1 }}><div style={{ fontWeight: 550, fontSize: 12.5 }}>{r.c.k}</div><div className="muted-2" style={{ fontSize: 11 }}>{r.c.s}</div></div>
+                  <Badge tone="violet">Conformité</Badge>
+                </div>
+              );
+            })}
             <div style={{ padding: '6px 11px 3px', fontSize: 10.5, color: 'var(--ink-3)', display: 'flex', gap: 10 }}>
               <span><kbd>↑</kbd> <kbd>↓</kbd> naviguer</span><span><kbd>↵</kbd> ouvrir</span><span><kbd>esc</kbd> fermer</span>
             </div>

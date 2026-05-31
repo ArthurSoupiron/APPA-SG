@@ -457,6 +457,62 @@ const deleteGedDocs = (ids) => {
   if (removed) { logActivity({ who: 'lb', action: 'a supprimé', target: `${removed} document(s)`, ctx: 'action groupée · GED', icon: 'trash-2', tone: 'neutral' }); notify(`${removed} document(s) supprimé(s)`, 'warn'); sgCommit(); }
 };
 
+// ---- Statistiques --------------------------------------------------------
+// complétude moyenne par pôle
+const statsByPole = () => {
+  const map = {};
+  MEMBERS.forEach(m => {
+    const p = m.pole || '—';
+    (map[p] = map[p] || []).push(dossierStats(m).pct);
+  });
+  return Object.keys(map).sort().map(p => ({
+    pole: p, count: map[p].length,
+    avg: Math.round(map[p].reduce((a, b) => a + b, 0) / map[p].length),
+  }));
+};
+// répartition des statuts membres
+const statsByStatus = () => {
+  const map = {};
+  MEMBERS.forEach(m => { map[m.status] = (map[m.status] || 0) + 1; });
+  return Object.keys(map).map(s => ({ status: s, label: (STATUS_LABEL[s] || {}).k || s, tone: (STATUS_LABEL[s] || {}).tone, count: map[s] }));
+};
+// répartition des pièces (présentes / en attente / manquantes) sur tous les dossiers requis
+const statsPieces = () => {
+  let ok = 0, pending = 0, missing = 0;
+  MEMBERS.forEach(m => DOC_TYPES.filter(d => d.required).forEach(d => {
+    const v = m.docs[d.code];
+    if (v === 'ok') ok++; else if (v === 'pending') pending++; else missing++;
+  }));
+  return { ok, pending, missing, total: ok + pending + missing };
+};
+// répartition GED par statut (signé / à signer / archivé)
+const statsDocStatus = () => {
+  const map = { signed: 0, pending: 0, archived: 0 };
+  DOCS.forEach(d => { map[d.status] = (map[d.status] || 0) + 1; });
+  return map;
+};
+
+// ---- Sauvegarde / restauration (JSON) ------------------------------------
+const exportBackup = () => JSON.stringify({
+  _meta: { app: 'jeece-sg', version: 1, exportedAt: new Date().toISOString() },
+  MEMBERS, DOCS, ACTIVITY, DEADLINES, CONFORMITE, DOC_TYPES, GED_CATS,
+}, null, 2);
+
+const importBackup = (json) => {
+  const d = typeof json === 'string' ? JSON.parse(json) : json;
+  if (!d || !Array.isArray(d.MEMBERS)) throw new Error('Fichier de sauvegarde invalide');
+  MEMBERS.splice(0, MEMBERS.length, ...d.MEMBERS);
+  if (Array.isArray(d.DOCS))       DOCS.splice(0, DOCS.length, ...d.DOCS);
+  if (Array.isArray(d.ACTIVITY))   ACTIVITY.splice(0, ACTIVITY.length, ...d.ACTIVITY);
+  if (Array.isArray(d.DEADLINES))  DEADLINES.splice(0, DEADLINES.length, ...d.DEADLINES);
+  if (Array.isArray(d.CONFORMITE)) CONFORMITE.splice(0, CONFORMITE.length, ...d.CONFORMITE);
+  if (Array.isArray(d.DOC_TYPES))  DOC_TYPES.splice(0, DOC_TYPES.length, ...d.DOC_TYPES);
+  if (Array.isArray(d.GED_CATS))   GED_CATS.splice(0, GED_CATS.length, ...d.GED_CATS);
+  logActivity({ who: 'lb', action: 'a restauré', target: `${MEMBERS.length} dossiers`, ctx: 'sauvegarde JSON importée', icon: 'database-backup', tone: 'info' });
+  notify('Sauvegarde restaurée', 'ok');
+  sgCommit();
+};
+
 // hydrate dès le chargement du module (avant le 1er render)
 sgHydrate();
 DEADLINES.sort((a, b) => a.date.localeCompare(b.date));
@@ -478,4 +534,5 @@ Object.assign(window, {
   addMandate, endMandate, deleteMandate, advanceCheck, addDeadline, deleteDeadline,
   addDocType, removeDocType, toggleDocRequired, addCat, removeCat,
   missingPieces, buildRelanceMailto, logRelance, deleteMembers, deleteGedDocs,
+  statsByPole, statsByStatus, statsPieces, statsDocStatus, exportBackup, importBackup,
 });
