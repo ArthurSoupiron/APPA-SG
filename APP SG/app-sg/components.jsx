@@ -22,6 +22,14 @@ const openModal = (type, props = {}) => window.dispatchEvent(new CustomEvent('sg
 // Affiche un toast (notification éphémère en bas d'écran), géré par <ToastHost/>.
 const toast = (msg, tone = 'ok') => window.dispatchEvent(new CustomEvent('sg:toast', { detail: { msg, tone } }));
 
+// Prépare et ouvre l'email de relance d'un membre (pièces manquantes), puis trace l'action.
+const doRelance = (m) => {
+  const r = buildRelanceMailto(m);
+  if (!r.count) { toast(`Dossier de ${m.first} déjà complet`, 'ok'); return; }
+  window.location.href = r.href; // ouvre le client mail avec le brouillon pré-rempli
+  logRelance(m);
+};
+
 // ===== Utilitaires : téléchargement, CSV, modèles de documents =====
 const downloadBlob = (filename, content, type = 'text/plain;charset=utf-8') => {
   const blob = new Blob([content], { type });
@@ -805,4 +813,4 @@ const ModalHost = ({ navigate }) => {
   return null;
 };
 
-Object.assign(window, { cls, useIcons, useStore, openModal, toast, downloadBlob, toCSV, exportMembersCSV, exportDocsCSV, humanSize, FileDrop, FilePreview, Icon, Avatar, Badge, Btn, IconBtn, Card, Empty, Ring, Bar, Sidebar, Header, Modal, Field, TextField, SelectField, ModalHost, ToastHost });
+Object.assign(window, { cls, useIcons, useStore, openModal, toast, doRelance, downloadBlob, toCSV, exportMembersCSV, exportDocsCSV, humanSize, FileDrop, FilePreview, Icon, Avatar, Badge, Btn, IconBtn, Card, Empty, Ring, Bar, Sidebar, Header, Modal, Field, TextField, SelectField, ModalHost, ToastHost });

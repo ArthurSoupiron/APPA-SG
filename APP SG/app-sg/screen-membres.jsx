@@ -7,8 +7,10 @@ const ScreenMembres = ({ navigate }) => {
   const [completeness, setCompleteness] = React.useState('all');
   const [view, setView] = React.useState('list');
   const [sort, setSort] = React.useState('completeness');
+  const [sel, setSel] = React.useState(() => new Set());
 
   const poles = ['all', ...Array.from(new Set(MEMBERS.map(m => m.pole)))];
+  const toggleSel = (id) => setSel(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   let list = MEMBERS.filter(m => {
     if (pole !== 'all' && m.pole !== pole) return false;
@@ -76,6 +78,27 @@ const ScreenMembres = ({ navigate }) => {
         </div>
       </div>
 
+      {sel.size > 0 && (
+        <div className="card" style={{ padding: '10px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10, background: 'var(--brand-050)', borderColor: 'var(--brand-200)' }}>
+          <Badge tone="brand">{sel.size} sélectionné(s)</Badge>
+          <span className="spacer"></span>
+          <Btn size="sm" icon="mail" onClick={() => {
+            const targets = list.filter(m => sel.has(m.id) && dossierStats(m).pct < 100 && m.status !== 'alumni');
+            if (!targets.length) { toast('Aucun dossier incomplet à relancer', 'info'); return; }
+            targets.forEach(m => logRelance(m));
+            const emails = targets.map(m => m.email).join(',');
+            window.location.href = `mailto:${encodeURIComponent(emails)}?subject=${encodeURIComponent('[JEECE · SG] Dossier membre à compléter')}&body=${encodeURIComponent('Bonjour,\n\nMerci de compléter les pièces manquantes de ton dossier membre JEECE dès que possible.\n\nLe Secrétariat Général · JEECE')}`;
+          }}>Relancer</Btn>
+          <Btn size="sm" icon="download" onClick={exportMembersCSV}>Exporter</Btn>
+          <Btn size="sm" icon="trash-2" style={{ color: '#B23A33', borderColor: 'var(--danger-bg)' }} onClick={() => openModal('confirm', {
+            danger: true, title: `Supprimer ${sel.size} dossier(s) ?`, confirmLabel: 'Supprimer',
+            message: 'Les dossiers sélectionnés et leur suivi de pièces seront définitivement supprimés.',
+            onConfirm: () => { deleteMembers([...sel]); setSel(new Set()); },
+          })}>Supprimer</Btn>
+          <IconBtn icon="x" title="Désélectionner" style={{ width: 30, height: 30 }} onClick={() => setSel(new Set())} />
+        </div>
+      )}
+
       {list.length === 0 ? (
         <div className="card"><Empty /></div>
       ) : view === 'list' ? (
@@ -83,6 +106,9 @@ const ScreenMembres = ({ navigate }) => {
           <table className="tbl">
             <thead>
               <tr>
+                <th style={{ width: 36 }}><input type="checkbox" aria-label="Tout sélectionner"
+                  checked={list.length > 0 && list.every(m => sel.has(m.id))}
+                  onChange={(e) => setSel(e.target.checked ? new Set(list.map(m => m.id)) : new Set())} /></th>
                 <th>Membre</th><th>Pôle / Rôle</th><th>Statut</th>
                 <th>Pièces du dossier</th>
                 <th style={{ cursor: 'pointer' }} onClick={() => setSort('completeness')}>Complétude {sort === 'completeness' && '↑'}</th>
@@ -94,7 +120,10 @@ const ScreenMembres = ({ navigate }) => {
                 const s = dossierStats(m);
                 const st = STATUS_LABEL[m.status];
                 return (
-                  <tr key={m.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`dossier/${m.id}`)}>
+                  <tr key={m.id} style={{ cursor: 'pointer', background: sel.has(m.id) ? 'var(--brand-050)' : undefined }} onClick={() => navigate(`dossier/${m.id}`)}>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" aria-label={`Sélectionner ${m.first} ${m.last}`} checked={sel.has(m.id)} onChange={() => toggleSel(m.id)} />
+                    </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
                         <Avatar m={m} size={38} />

@@ -415,6 +415,48 @@ const conformityScore = () => {
 // nombre de points de conformité non encore conformes (pour la sidebar)
 const conformityOpen = () => CONFORMITE.filter(c => c.state !== 'ok').length + (rollups().incomplete.length ? 1 : 0);
 
+// ---- Relances (emails de pièces manquantes) ------------------------------
+// liste des pièces requises manquantes/en attente d'un membre
+const missingPieces = (m) => DOC_TYPES.filter(d => d.required && m.docs[d.code] !== 'ok')
+  .map(d => ({ code: d.code, label: d.label, state: m.docs[d.code] || 'missing' }));
+
+// construit un lien mailto pré-rempli pour relancer un membre sur ses pièces
+const buildRelanceMailto = (m) => {
+  const pieces = missingPieces(m);
+  const lines = pieces.map(p => `  - ${p.label} (${p.state === 'pending' ? 'en attente de validation' : 'manquante'})`);
+  const subject = `[JEECE · SG] Dossier membre à compléter — ${m.first} ${m.last}`;
+  const body = `Bonjour ${m.first},\n\n`
+    + `Ton dossier membre JEECE n'est pas encore complet. Merci de fournir les pièces suivantes dès que possible :\n\n`
+    + `${lines.join('\n')}\n\n`
+    + `Tu peux les déposer directement dans ton espace SG.\n\n`
+    + `Merci d'avance,\nLe Secrétariat Général · JEECE`;
+  return { to: m.email, subject, body, count: pieces.length,
+    href: `mailto:${encodeURIComponent(m.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}` };
+};
+
+// journalise une relance (l'envoi réel se fait via le client mail)
+const logRelance = (m) => {
+  logActivity({ who: 'lb', action: 'a relancé', target: `${m.first} ${m.last}`, ctx: 'pièces manquantes · email', icon: 'mail', tone: 'info' });
+  notify(`Relance préparée pour ${m.first} ${m.last}`, 'info');
+  sgCommit();
+};
+
+// suppression groupée de dossiers membres
+const deleteMembers = (ids) => {
+  const set = new Set(ids);
+  const removed = MEMBERS.filter(m => set.has(m.id)).length;
+  for (let i = MEMBERS.length - 1; i >= 0; i--) if (set.has(MEMBERS[i].id)) MEMBERS.splice(i, 1);
+  if (removed) { logActivity({ who: 'lb', action: 'a supprimé', target: `${removed} dossier(s) membre`, ctx: 'action groupée', icon: 'trash-2', tone: 'neutral' }); notify(`${removed} dossier(s) supprimé(s)`, 'warn'); sgCommit(); }
+};
+
+// suppression groupée de documents GED
+const deleteGedDocs = (ids) => {
+  const set = new Set(ids);
+  const removed = DOCS.filter(d => set.has(d.id)).length;
+  for (let i = DOCS.length - 1; i >= 0; i--) if (set.has(DOCS[i].id)) DOCS.splice(i, 1);
+  if (removed) { logActivity({ who: 'lb', action: 'a supprimé', target: `${removed} document(s)`, ctx: 'action groupée · GED', icon: 'trash-2', tone: 'neutral' }); notify(`${removed} document(s) supprimé(s)`, 'warn'); sgCommit(); }
+};
+
 // hydrate dès le chargement du module (avant le 1er render)
 sgHydrate();
 DEADLINES.sort((a, b) => a.date.localeCompare(b.date));
@@ -435,4 +477,5 @@ Object.assign(window, {
   updateMember, deleteMember, setGedStatus, toggleGedFav, deleteGedDoc,
   addMandate, endMandate, deleteMandate, advanceCheck, addDeadline, deleteDeadline,
   addDocType, removeDocType, toggleDocRequired, addCat, removeCat,
+  missingPieces, buildRelanceMailto, logRelance, deleteMembers, deleteGedDocs,
 });

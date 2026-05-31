@@ -60,6 +60,7 @@ const ScreenDossier = ({ navigate, memberId }) => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <Btn kind="primary" icon="file-plus-2" onClick={() => openModal('generate', { memberId: m.id })}>Générer un doc</Btn>
             <Btn icon="upload" onClick={() => openModal('piece', { memberId: m.id })}>Déposer une pièce</Btn>
+            {s.pct < 100 && m.status !== 'alumni' && <Btn icon="mail" onClick={() => doRelance(m)}>Relancer ({s.missing + s.pending})</Btn>}
             <div style={{ display: 'flex', gap: 6 }}>
               <Btn size="sm" icon="printer" onClick={() => window.print()} style={{ flex: 1 }}>Imprimer</Btn>
               <IconBtn icon="trash-2" title="Supprimer le dossier"
