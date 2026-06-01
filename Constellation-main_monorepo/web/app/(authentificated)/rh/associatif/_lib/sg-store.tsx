@@ -1,7 +1,7 @@
 "use client";
 
 // Module SG — store client (localStorage) + mutations + helpers dérivés
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { buildSeed } from "./sg-seed";
 import type {
   DocState,
@@ -45,12 +45,10 @@ const SgContext = createContext<SgContextValue | null>(null);
 
 export function SgStoreProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<SgData>(() => buildSeed());
-  const [ready, setReady] = useState(false);
 
   // hydrate côté client uniquement (évite tout mismatch SSR)
   useEffect(() => {
     setData(hydrate());
-    setReady(true);
   }, []);
 
   const mutate = (fn: (draft: SgData) => SgData) => {
@@ -76,8 +74,6 @@ export function SgStoreProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<SgContextValue>(() => ({ data, mutate, reset }), [data]);
 
-  // tant que l'hydratation n'a pas eu lieu, on rend le seed (cohérent SSR → client)
-  void ready;
   return <SgContext.Provider value={value}>{children}</SgContext.Provider>;
 }
 

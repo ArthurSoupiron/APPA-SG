@@ -15,7 +15,7 @@ import {
   rollups,
   useSg,
 } from "../_lib/sg-store";
-import { CompletenessBar, DocDots, Ring, SgAvatar } from "./sg-bits";
+import { CompletenessBar, DocDots, SgAvatar } from "./sg-bits";
 
 const TONE_BADGE: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
   warn: "secondary",
