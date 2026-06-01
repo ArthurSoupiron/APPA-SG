@@ -28,6 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { useSgBase } from "../_lib/sg-base";
 import { dossierStats, mutations, useSg } from "../_lib/sg-store";
 import { exportMembersCSV } from "../_lib/sg-utils";
 import { CompletenessBar, DocDots, SgAvatar, StatusBadge } from "./sg-bits";
@@ -35,6 +36,7 @@ import { ImportMembersDialog, MemberFormDialog } from "./sg-member-dialogs";
 
 export function SgMembers() {
   const { data, mutate } = useSg();
+  const base = useSgBase();
   const [q, setQ] = useState("");
   const [pole, setPole] = useState("all");
   const [status, setStatus] = useState("all");
@@ -169,7 +171,7 @@ export function SgMembers() {
                     <Checkbox checked={checked.has(m.id)} onCheckedChange={() => toggle(m.id)} aria-label={`Sélectionner ${m.first}`} />
                   </TableCell>
                   <TableCell>
-                    <Link href={`/rh/associatif/membres/${m.id}`} className="flex items-center gap-3">
+                    <Link href={`${base}/membres/${m.id}`} className="flex items-center gap-3">
                       <SgAvatar member={m} size={36} />
                       <div>
                         <div className="text-sm font-medium">{m.first} {m.last}</div>

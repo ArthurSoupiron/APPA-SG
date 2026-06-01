@@ -30,6 +30,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useRouter } from "next/navigation";
+import { useSgBase } from "../_lib/sg-base";
 import { dossierStats, mutations, useSg } from "../_lib/sg-store";
 import type { DocState, Member } from "../_lib/sg-types";
 import { Ring, SgAvatar, StatusBadge } from "./sg-bits";
@@ -43,6 +44,7 @@ const STATE_META: Record<DocState, { label: string; cls: string }> = {
 
 export function SgDossier({ memberId }: { memberId: string }) {
   const { data, mutate } = useSg();
+  const base = useSgBase();
   const router = useRouter();
   const m = data.members.find((x) => x.id === memberId);
   const [editOpen, setEditOpen] = useState(false);
@@ -54,7 +56,7 @@ export function SgDossier({ memberId }: { memberId: string }) {
       <Card>
         <CardContent className="py-12 text-center">
           <p className="font-medium">Membre introuvable</p>
-          <Link href="/rh/associatif/membres" className="text-sm text-primary hover:underline">
+          <Link href={`${base}/membres`} className="text-sm text-primary hover:underline">
             Retour à l'annuaire
           </Link>
         </CardContent>
@@ -80,7 +82,7 @@ export function SgDossier({ memberId }: { memberId: string }) {
 
   return (
     <div className="space-y-4">
-      <Link href="/rh/associatif/membres" className="text-sm text-muted-foreground hover:underline">
+      <Link href={`${base}/membres`} className="text-sm text-muted-foreground hover:underline">
         ← Membres
       </Link>
 
@@ -261,7 +263,7 @@ export function SgDossier({ memberId }: { memberId: string }) {
               onClick={() => {
                 mutate(mutations.deleteMember(m.id));
                 toast.success("Dossier supprimé");
-                router.push("/rh/associatif/membres");
+                router.push(`${base}/membres`);
               }}
             >
               Supprimer

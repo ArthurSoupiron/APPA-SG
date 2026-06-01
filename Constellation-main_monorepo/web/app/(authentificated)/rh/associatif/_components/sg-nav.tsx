@@ -5,17 +5,20 @@ import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 
-const ITEMS = [
-  { href: "/rh/associatif", label: "Tableau de bord", exact: true },
-  { href: "/rh/associatif/membres", label: "Membres" },
-  { href: "/rh/associatif/documents", label: "Documents (GED)" },
-  { href: "/rh/associatif/conformite", label: "Conformité" },
-  { href: "/rh/associatif/journal", label: "Journal" },
-  { href: "/rh/associatif/parametres", label: "Paramètres" },
-] as const;
+import { useSgBase } from "../_lib/sg-base";
 
 export function SgNav() {
   const pathname = usePathname();
+  const base = useSgBase();
+
+  const ITEMS = [
+    { href: base, label: "Tableau de bord", exact: true },
+    { href: `${base}/membres`, label: "Membres" },
+    { href: `${base}/documents`, label: "Documents (GED)" },
+    { href: `${base}/conformite`, label: "Conformité" },
+    { href: `${base}/journal`, label: "Journal" },
+    { href: `${base}/parametres`, label: "Paramètres" },
+  ] as const;
 
   return (
     <nav className="flex flex-wrap gap-2 border-b border-border pb-3">

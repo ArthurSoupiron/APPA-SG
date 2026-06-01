@@ -15,6 +15,7 @@ import {
   rollups,
   useSg,
 } from "../_lib/sg-store";
+import { useSgBase } from "../_lib/sg-base";
 import { CompletenessBar, DocDots, SgAvatar } from "./sg-bits";
 
 const TONE_BADGE: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
@@ -26,6 +27,7 @@ const TONE_BADGE: Record<string, "default" | "secondary" | "outline" | "destruct
 
 export function SgDashboard() {
   const { data } = useSg();
+  const base = useSgBase();
   const r = rollups(data);
   const incomplete = r.incomplete.filter((m) => m.status !== "alumni").slice(0, 5);
 
@@ -82,7 +84,7 @@ export function SgDashboard() {
         <Card className="lg:col-span-2">
           <CardHeader className="flex-row items-center justify-between gap-2">
             <CardTitle className="text-base">Dossiers à compléter</CardTitle>
-            <Link href="/rh/associatif/membres" className="text-sm text-primary hover:underline">
+            <Link href={`${base}/membres`} className="text-sm text-primary hover:underline">
               Tout voir
             </Link>
           </CardHeader>
@@ -95,7 +97,7 @@ export function SgDashboard() {
               return (
                 <Link
                   key={m.id}
-                  href={`/rh/associatif/membres/${m.id}`}
+                  href={`${base}/membres/${m.id}`}
                   className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-muted/60"
                 >
                   <SgAvatar member={m} size={34} />
@@ -160,7 +162,7 @@ export function SgDashboard() {
         <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="text-base">Activité récente</CardTitle>
-            <Link href="/rh/associatif/journal" className="text-sm text-primary hover:underline">
+            <Link href={`${base}/journal`} className="text-sm text-primary hover:underline">
               Journal complet
             </Link>
           </CardHeader>
