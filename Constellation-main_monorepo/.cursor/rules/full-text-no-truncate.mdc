@@ -1,0 +1,8 @@
+---
+description: Texte UI toujours lisible en entier (pas de troncature).
+alwaysApply: true
+---
+
+Ne pas tronquer les textes destinés à l’utilisateur (`truncate`, `line-clamp`, ellipses masquant le contenu). Préférer retours à la ligne et césure : `whitespace-normal`, `break-words` / `overflow-wrap:anywhere`, colonnes ou cartes plus larges, ou zone défilante si nécessaire — le message complet doit rester accessible.
+
+Pour les écrans admin : pas de longs paragraphes explicatifs sauf demande explicite ; titres + champs suffisent en général.
