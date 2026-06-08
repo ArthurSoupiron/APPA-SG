@@ -1,7 +1,0 @@
-# Monorepo — secrets à la racine (non couverts par web/ ni backend/)
-.env
-.env.*
-!.env.example
-database/.env
-
-node_modules
