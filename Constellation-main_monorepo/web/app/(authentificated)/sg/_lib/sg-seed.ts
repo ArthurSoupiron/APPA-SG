@@ -32,22 +32,9 @@ const GED_CATS: GedCat[] = [
 
 const MEMBERS: Member[] = [];
 
-const DEADLINES: Deadline[] = [
-  { id: "d1", date: "2026-06-14", title: "Assemblée Générale ordinaire 2026", sub: "Convocation à diffuser avant le 31 mai", kind: "AG" },
-  { id: "d2", date: "2026-06-22", title: "Renouvellement assurance RC", sub: "Allianz · contrat FR-208441", kind: "Assurance" },
-  { id: "d3", date: "2026-06-30", title: "Dépôt des comptes annuels 2025", sub: "JOAFE · obligation légale", kind: "Compta" },
-  { id: "d4", date: "2026-07-15", title: "Passation de mandat 2025–2026", sub: "14 membres sortants · archivage dossiers", kind: "Mandat" },
-  { id: "d5", date: "2026-08-02", title: "Déclaration nouveaux statuts", sub: "Préfecture du 75 · suite vote AG", kind: "Préfecture" },
-];
+const DEADLINES: Deadline[] = [];
 
-const CONFORMITE: ConformiteCheck[] = [
-  { id: "c1", k: "Statuts à jour & déposés", s: "Version consolidée 2026 · Préfecture", state: "ok", ref: "STAT-2026-V4" },
-  { id: "c2", k: "PV de la dernière AG signé", s: "AG Extraordinaire du 28 avril 2026", state: "ok", ref: "PV-AG-2026-002" },
-  { id: "c3", k: "Règlement intérieur validé", s: "v.4 en attente de signature Présidence", state: "pending", ref: "RI-2026-V4" },
-  { id: "c4", k: "Déclaration changement de bureau", s: "Cerfa 13971 déposé · 20 sept 2025", state: "ok", ref: "PREF-2025-014" },
-  { id: "c5", k: "Assurance RC en cours de validité", s: "Allianz · renouvellement avant le 22 juin", state: "pending", ref: "ASSU-2025-002" },
-  { id: "c6", k: "Comptes annuels 2025 déposés", s: "JOAFE · échéance 30 juin 2026", state: "todo", ref: "COMPTA-2025" },
-];
+const CONFORMITE: ConformiteCheck[] = [];
 
 const DOCS: GedDoc[] = [];
 
