@@ -30,30 +30,7 @@ const GED_CATS: GedCat[] = [
   { id: "contrats", label: "Contrats & conventions", count: 130 },
 ];
 
-const MEMBERS: Member[] = [
-  {
-    id: "lb", first: "Léa", last: "Bernard", initials: "LB", role: "Secrétaire Général", pole: "Bureau", promo: 2026, year: "L3", status: "active", email: "lea.bernard@jeece.fr", phone: "+33 6 78 12 34 56", joined: "sept. 2024", city: "Paris 11e", address: "8 rue Saint-Maur, 75011 Paris", studentId: "ECE-23018821", jeeceId: "JE-2024-0088", birth: "12 janvier 2004",
-    docs: { BA: "ok", CHARTE: "ok", CE: "ok", RIB: "ok", RC: "ok", CV: "ok" },
-    mandates: [{ role: "Secrétaire Général", period: "Sept. 2025 → en cours", current: true }, { role: "Chargée administration", period: "Sept. 2024 → août 2025" }],
-  },
-  {
-    id: "hm", first: "Hugo", last: "Martin", initials: "HM", role: "Président", pole: "Bureau", promo: 2025, year: "M1", status: "active", email: "hugo.martin@jeece.fr", phone: "+33 6 12 90 22 18", joined: "sept. 2023", city: "Paris 11e", address: "12 rue Oberkampf, 75011 Paris", studentId: "ECE-22014099", jeeceId: "JE-2023-0042", birth: "14 mars 2003",
-    docs: { BA: "ok", CHARTE: "ok", CE: "ok", RIB: "ok", RC: "pending", CV: "ok" },
-    mandates: [{ role: "Président", period: "Sept. 2025 → en cours", current: true }, { role: "VP Commercial", period: "Sept. 2024 → août 2025" }, { role: "Chargé d'affaires", period: "Oct. 2023 → août 2024" }],
-  },
-  { id: "cr", first: "Camille", last: "Roy", initials: "CR", role: "Trésorière", pole: "Bureau", promo: 2026, year: "L3", status: "active", email: "camille.roy@jeece.fr", phone: "+33 6 84 55 71 22", joined: "oct. 2024", city: "Paris 13e", docs: { BA: "ok", CHARTE: "ok", CE: "ok", RIB: "ok", RC: "ok", CV: "pending" } },
-  { id: "pd", first: "Paul", last: "Delcourt", initials: "PD", role: "VP Qualité", pole: "Qualité", promo: 2025, year: "M1", status: "active", email: "paul.delcourt@jeece.fr", phone: "+33 6 18 23 88 04", joined: "sept. 2023", city: "Montrouge", docs: { BA: "ok", CHARTE: "ok", CE: "ok", RIB: "ok", RC: "ok", CV: "ok" } },
-  { id: "em", first: "Élise", last: "Moreau", initials: "EM", role: "Chargée comm.", pole: "Communication", promo: 2027, year: "L2", status: "active", email: "elise.moreau@jeece.fr", phone: "+33 7 02 14 65 30", joined: "oct. 2025", city: "Paris 15e", docs: { BA: "ok", CHARTE: "pending", CE: "ok", RIB: "missing", RC: "ok", CV: "ok" } },
-  { id: "yb", first: "Yanis", last: "Belkacem", initials: "YB", role: "VP Systèmes d'info.", pole: "SI", promo: 2025, year: "M2", status: "active", email: "yanis.belkacem@jeece.fr", phone: "+33 6 47 88 12 09", joined: "sept. 2022", city: "Paris 19e", docs: { BA: "ok", CHARTE: "ok", CE: "ok", RIB: "ok", RC: "ok", CV: "ok" } },
-  { id: "ad", first: "Anaïs", last: "Diop", initials: "AD", role: "Chargée recrutement", pole: "RH", promo: 2026, year: "L3", status: "active", email: "anais.diop@jeece.fr", phone: "+33 6 31 09 67 11", joined: "sept. 2024", city: "Bagnolet", docs: { BA: "ok", CHARTE: "ok", CE: "pending", RIB: "ok", RC: "missing", CV: "ok" } },
-  { id: "td", first: "Théo", last: "Da Silva", initials: "TD", role: "VP Communication", pole: "Communication", promo: 2025, year: "M1", status: "active", email: "theo.dasilva@jeece.fr", phone: "+33 7 60 22 18 47", joined: "sept. 2023", city: "Paris 18e", docs: { BA: "ok", CHARTE: "ok", CE: "ok", RIB: "ok", RC: "ok", CV: "pending" } },
-  { id: "mn", first: "Marion", last: "Nguyen", initials: "MN", role: "Postulante", pole: "SI", promo: 2028, year: "L1", status: "pending", email: "marion.nguyen@edu.ece.fr", phone: "+33 7 88 14 02 99", joined: "mai 2026", city: "Paris 12e", docs: { BA: "pending", CHARTE: "missing", CE: "ok", RIB: "missing", RC: "missing", CV: "ok" } },
-  { id: "jv", first: "Jules", last: "Vasseur", initials: "JV", role: "Alumni · ex-Président", pole: "Alumni", promo: 2024, year: "Diplômé", status: "alumni", email: "jules.vasseur@gmail.com", phone: "—", joined: "sept. 2021", city: "Lyon", docs: { BA: "ok", CHARTE: "ok", CE: "ok", RIB: "ok", RC: "ok", CV: "ok" } },
-  { id: "sh", first: "Sarah", last: "Halimi", initials: "SH", role: "VP Ressources humaines", pole: "RH", promo: 2025, year: "M1", status: "active", email: "sarah.halimi@jeece.fr", phone: "+33 6 45 91 03 27", joined: "sept. 2023", city: "Paris 20e", docs: { BA: "ok", CHARTE: "ok", CE: "ok", RIB: "ok", RC: "ok", CV: "ok" } },
-  { id: "jm", first: "Jules", last: "Maréchal", initials: "JM", role: "Chargé d'affaires", pole: "Commercial", promo: 2026, year: "L3", status: "active", email: "jules.marechal@jeece.fr", phone: "+33 6 02 87 14 56", joined: "sept. 2024", city: "Vincennes", docs: { BA: "ok", CHARTE: "ok", CE: "ok", RIB: "pending", RC: "ok", CV: "ok" } },
-  { id: "ib", first: "Inès", last: "Bensaïd", initials: "IB", role: "Chargée production", pole: "Production", promo: 2026, year: "L3", status: "active", email: "ines.bensaid@jeece.fr", phone: "+33 7 14 22 88 03", joined: "sept. 2024", city: "Paris 17e", docs: { BA: "ok", CHARTE: "ok", CE: "ok", RIB: "ok", RC: "ok", CV: "ok" } },
-  { id: "rf", first: "Romain", last: "Faure", initials: "RF", role: "Membre actif", pole: "SI", promo: 2027, year: "L2", status: "inactive", email: "romain.faure@edu.ece.fr", phone: "—", joined: "sept. 2025", city: "—", docs: { BA: "ok", CHARTE: "missing", CE: "missing", RIB: "missing", RC: "missing", CV: "missing" } },
-];
+const MEMBERS: Member[] = [];
 
 const DEADLINES: Deadline[] = [
   { id: "d1", date: "2026-06-14", title: "Assemblée Générale ordinaire 2026", sub: "Convocation à diffuser avant le 31 mai", kind: "AG" },
