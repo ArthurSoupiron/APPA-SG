@@ -348,6 +348,16 @@ export const mutations = {
     pushActivity(draft, { action: verb, target: d.title, ctx: "GED", icon: status === "signed" ? "pen-tool" : "archive", tone: status === "signed" ? "violet" : "neutral" });
     return draft;
   },
+  signGedDoc: (id: string, sig: { signature: string; signedBy: string }) => (draft: SgData): SgData => {
+    const d = draft.docs.find((x) => x.id === id);
+    if (!d) return draft;
+    d.status = "signed";
+    d.signature = sig.signature;
+    d.signedBy = sig.signedBy || "Secrétaire Général";
+    d.signedAt = new Date().toLocaleString("fr-FR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    pushActivity(draft, { action: "a signé", target: d.title, ctx: `signature numérique · ${d.signedBy}`, icon: "pen-tool", tone: "violet" });
+    return draft;
+  },
   toggleGedFav: (id: string) => (draft: SgData): SgData => {
     const d = draft.docs.find((x) => x.id === id);
     if (d) d.fav = !d.fav;

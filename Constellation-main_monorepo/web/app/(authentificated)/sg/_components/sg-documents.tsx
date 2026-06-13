@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { gedCount, mutations, useSg } from "../_lib/sg-store";
 import { exportDocsCSV } from "../_lib/sg-utils";
 import type { GedDoc } from "../_lib/sg-types";
+import { SignDocumentDialog, SignaturePreview } from "./sg-signature-pad";
 
 const STATUS_BADGE: Record<GedDoc["status"], { label: string; variant: "default" | "secondary" | "outline" }> = {
   signed: { label: "Signé", variant: "default" },
@@ -47,6 +48,7 @@ export function SgDocuments() {
   const [checked, setChecked] = useState<Set<string>>(() => new Set());
   const [createOpen, setCreateOpen] = useState(false);
   const [confirmBulk, setConfirmBulk] = useState(false);
+  const [signDoc, setSignDoc] = useState<GedDoc | null>(null);
 
   const filtered = useMemo(() => {
     let xs = data.docs.slice();
@@ -153,6 +155,7 @@ export function SgDocuments() {
                       {author && <span>· {author.first} {author.last[0]}.</span>}
                     </div>
                   </div>
+                  {d.signature && <SignaturePreview src={d.signature} />}
                   <Badge variant={sb.variant}>{sb.label}</Badge>
                   <Button
                     size="sm"
@@ -163,7 +166,7 @@ export function SgDocuments() {
                     ★
                   </Button>
                   {d.status === "pending" && (
-                    <Button size="sm" onClick={() => { mutate(mutations.setGedStatus(d.id, "signed")); toast.success("Document signé"); }}>Signer</Button>
+                    <Button size="sm" onClick={() => setSignDoc(d)}>Signer</Button>
                   )}
                   {d.status === "signed" && (
                     <Button size="sm" variant="outline" onClick={() => mutate(mutations.setGedStatus(d.id, "archived"))}>Archiver</Button>
@@ -179,6 +182,17 @@ export function SgDocuments() {
       </div>
 
       <NewDocDialog open={createOpen} onOpenChange={setCreateOpen} />
+
+      <SignDocumentDialog
+        doc={signDoc}
+        onOpenChange={(v) => { if (!v) setSignDoc(null); }}
+        onSign={(signature, signedBy) => {
+          if (!signDoc) return;
+          mutate(mutations.signGedDoc(signDoc.id, { signature, signedBy }));
+          toast.success("Document signé");
+          setSignDoc(null);
+        }}
+      />
 
       <AlertDialog open={confirmBulk} onOpenChange={setConfirmBulk}>
         <AlertDialogContent>

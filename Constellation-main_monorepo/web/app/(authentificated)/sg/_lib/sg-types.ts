@@ -64,6 +64,9 @@ export type GedDoc = {
   tags: string[];
   security: "Public" | "Interne" | "Confidentiel";
   fav?: boolean;
+  signature?: string; // image PNG (dataURL) de la signature manuscrite
+  signedBy?: string; // nom du signataire
+  signedAt?: string; // date/heure de signature (affichage)
 };
 
 export type Deadline = {
