@@ -1,0 +1,20 @@
+---
+description: "<motion> réservé au SVG — layout et structure en div/section."
+alwaysApply: true
+---
+
+# `<motion>` = SVG uniquement
+
+En JSX, `<motion>` est l’élément **SVG SMIL** (animation le long d’un chemin). Il appartient dans un `<svg>`, pas comme conteneur de page.
+
+## À faire
+
+- **Layout, grilles, espacement** : `div`, `section`, ou composants du projet (`AccountPageMain`, etc.).
+- **Graphiques animés** : `<motion>` à l’intérieur d’un `<svg>` si l’animation SMIL est voulue.
+
+## À ne pas faire
+
+- `<motion className="space-y-6">` ou tout wrapper de contenu hors SVG → utiliser `div`.
+- Confondre avec Framer Motion (`motion.div`) : ce projet n’installe pas cette lib sauf demande explicite.
+
+Ne pas enchaîner `<motion>` puis correction en `<div>` : choisir le bon élément dès le premier jet.

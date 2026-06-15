@@ -1,0 +1,26 @@
+{
+  "name": "jaegermyster-dev-orchestrator",
+  "private": true,
+  "scripts": {
+    "lint": "biome check web backend",
+    "lint:fix": "biome check --write web backend",
+    "format": "biome format --write web backend",
+    "dev": "bun run dev:db:prepare && bunx concurrently -k --names \"web,backend,db,studio\" --prefix \"{time} [{name}]\" --timestamp-format \"yyyy-MM-dd HH:mm:ss.SSS\" --prefix-colors \"cyan.bold,magenta.bold,yellow.bold,green.bold\" \"bun run --cwd web dev\" \"bun run --cwd backend dev\" \"docker compose -f database/docker-compose.yml logs -f\" \"bun run --cwd backend db:studio\"",
+    "dev:apps": "bunx concurrently -k --names \"web,backend\" --prefix \"{time} [{name}]\" --timestamp-format \"yyyy-MM-dd HH:mm:ss.SSS\" --prefix-colors \"cyan.bold,magenta.bold\" \"bun run --cwd web dev\" \"bun run --cwd backend dev\"",
+    "dev:web": "bun run --cwd web dev",
+    "dev:backend": "bun run --cwd backend dev",
+    "dev:db:prepare": "docker compose -f database/docker-compose.yml up -d --wait && bun run --cwd backend db:migrate",
+    "dev:db:reset": "docker compose -f database/docker-compose.yml down -v && docker compose -f database/docker-compose.yml up -d --wait && bun run --cwd backend db:push:force && bun run --cwd backend db:seed",
+    "dev:db:sync": "bun run --cwd backend db:fresh",
+    "dev:db": "docker compose -f database/docker-compose.yml up",
+    "dev:db:down": "docker compose -f database/docker-compose.yml down",
+    "dev:db:logs": "docker compose -f database/docker-compose.yml logs -f",
+    "dev:studio": "bun run --cwd backend db:studio",
+    "build:web": "bun run --cwd web build",
+    "build:backend": "bun run --cwd backend build",
+    "build": "bun run build:web && bun run build:backend"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.16"
+  }
+}
