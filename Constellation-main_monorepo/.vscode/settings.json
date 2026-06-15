@@ -1,0 +1,81 @@
+{
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/.next/**": true,
+    "**/dist/**": true,
+    "**/build/**": true,
+    "**/coverage/**": true,
+    "**/.turbo/**": true,
+    "**/.cache/**": true,
+    "**/*.map": true,
+    "**/*.meta": true,
+    "**/*.sst": true
+  },
+
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/coverage": true,
+    "**/.turbo": true,
+    "**/.cache": true,
+    "**/*.map": true,
+    "**/*.meta": true,
+    "**/*.sst": true
+  },
+
+  "files.exclude": {
+    "**/*.map": true,
+    "**/*.meta": true,
+    "**/*.sst": true
+  },
+
+  "typescript.tsserver.maxTsServerMemory": 4096,
+  "typescript.disableAutomaticTypeAcquisition": true,
+  "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+
+  "javascript.suggest.autoImports": false,
+  "typescript.suggest.autoImports": false,
+
+  "editor.minimap.enabled": false,
+  "breadcrumbs.enabled": false,
+  "editor.semanticHighlighting.enabled": false,
+  "editor.codeLens": false,
+  "editor.glyphMargin": false,
+  "editor.lightbulb.enabled": "off",
+
+  "workbench.tree.enableStickyScroll": false,
+  "workbench.editor.enablePreview": true,
+
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+
+  "tailwindCSS.files.exclude": {
+    "**/*.meta": true,
+    "**/*.sst": true,
+    "**/*.map": true
+  },
+
+  "C_Cpp.workspaceParsingPriority": "low",
+  "C_Cpp.intelliSenseCacheSize": 512,
+  "C_Cpp.errorSquiggles": "enabled",
+
+  "git.autofetch": false,
+  "git.enableSmartCommit": true,
+
+  "terminal.integrated.gpuAcceleration": "on",
+
+  "extensions.ignoreRecommendations": true,
+
+  "telemetry.telemetryLevel": "off",
+
+  "update.mode": "start",
+
+  "window.restoreWindows": "one",
+
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000
+}

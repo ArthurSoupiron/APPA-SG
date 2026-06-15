@@ -1,0 +1,10 @@
+{
+  "plugins": {
+    "slack": {
+      "enabled": true
+    },
+    "webflow": {
+      "enabled": true
+    }
+  }
+}
