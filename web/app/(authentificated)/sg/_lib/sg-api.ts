@@ -119,3 +119,17 @@ export async function listSgDriveFiles(): Promise<SgDriveFile[]> {
     return [];
   }
 }
+
+/** Récupère le contenu texte (CSV…) d'un fichier Drive du dossier SG. */
+export async function fetchSgDriveFileContent(id: string): Promise<string | null> {
+  try {
+    const res = await fetch(`/api/app/assoc/drive/files/${encodeURIComponent(id)}/content`, {
+      credentials: "include",
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { content?: string };
+    return json.content ?? null;
+  } catch {
+    return null;
+  }
+}

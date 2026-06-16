@@ -3,6 +3,7 @@ import { Hono } from "hono";
 
 import {
   checkAssocFolderAccess,
+  downloadAssocDriveFileText,
   getAssocFolderConfig,
   listAssocDriveFiles,
   uploadAssocDocument,
@@ -84,6 +85,18 @@ export function registerAssocDriveRoutes(app: HonoType<{ Variables: AppVariables
     const res = await listAssocDriveFiles(user.id);
     if (!res.ok) return c.json({ error: "drive_error", message: res.message }, 502);
     return c.json({ files: res.files });
+  });
+
+  // Contenu texte d'un fichier Drive (pour importer un CSV de membres depuis Drive).
+  router.get("/drive/files/:id/content", async (c) => {
+    const denied = denyUnlessAuthenticated(c);
+    if (denied) return denied;
+    const user = c.get("user");
+    if (!user) return c.json({ error: "unauthorized" }, 401);
+
+    const res = await downloadAssocDriveFileText(user.id, c.req.param("id"));
+    if (!res.ok) return c.json({ error: "drive_error", message: res.message }, 502);
+    return c.json({ content: res.content });
   });
 
   app.route("/api/app/assoc", router);

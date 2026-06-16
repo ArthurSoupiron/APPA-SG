@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { uploadSgFileToDrive } from "../_lib/sg-api";
 import { useSgBase } from "../_lib/sg-base";
 import { useSg } from "../_lib/sg-store";
-import { exportMembersCSV } from "../_lib/sg-utils";
+import { buildMembersCsv, exportMembersCSV } from "../_lib/sg-utils";
 import type { Member } from "../_lib/sg-types";
 import { SgAvatar, StatusBadge } from "./sg-bits";
 
@@ -39,9 +41,21 @@ export function SgArchives() {
         <p className="text-sm text-muted-foreground">
           {archived.length} membre(s) archivé(s) · {pastMandates.length} mandat(s) passé(s)
         </p>
-        <Button variant="outline" size="sm" onClick={() => exportMembersCSV(data)}>
-          Exporter l&apos;annuaire
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => exportMembersCSV(data)}>
+            Exporter l&apos;annuaire
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              const up = await uploadSgFileToDrive("annuaire-jeece-sg.csv", buildMembersCsv(data));
+              up ? toast.success("Annuaire exporté vers Drive") : toast.error("Export Drive impossible (Drive lié ?).");
+            }}
+          >
+            Exporter vers Drive
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

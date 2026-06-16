@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 
+import { fetchSgDriveFileContent, listSgDriveFiles, type SgDriveFile } from "../_lib/sg-api";
 import { mutations, useSg, type NewMemberInput } from "../_lib/sg-store";
 import type { Member } from "../_lib/sg-types";
 
@@ -131,6 +132,19 @@ export function MemberFormDialog({
 export function ImportMembersDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const { mutate } = useSg();
   const [rows, setRows] = useState<NewMemberInput[]>([]);
+  const [driveFiles, setDriveFiles] = useState<SgDriveFile[]>([]);
+  const [driveFileId, setDriveFileId] = useState("");
+  const [loadingDrive, setLoadingDrive] = useState(false);
+
+  // À l'ouverture : liste les CSV du dossier Drive SG.
+  useEffect(() => {
+    if (!open) return;
+    setRows([]);
+    setDriveFileId("");
+    listSgDriveFiles().then((files) =>
+      setDriveFiles(files.filter((f) => f.name.toLowerCase().endsWith(".csv"))),
+    );
+  }, [open]);
 
   const parse = (text: string): NewMemberInput[] => {
     const lines = text.split(/\r?\n/).filter((l) => l.trim());
@@ -150,15 +164,24 @@ export function ImportMembersDialog({ open, onOpenChange }: { open: boolean; onO
     }).filter((o) => o.first && o.last);
   };
 
+  const applyParsed = (text: string) => {
+    const parsed = parse(text);
+    if (!parsed.length) { toast.error("Aucune ligne valide (colonnes Prénom / Nom requises)"); return; }
+    setRows(parsed);
+  };
+
   const onFile = async (file: File | undefined) => {
     if (!file) { setRows([]); return; }
-    try {
-      const parsed = parse(await file.text());
-      if (!parsed.length) { toast.error("Aucune ligne valide (colonnes Prénom / Nom requises)"); return; }
-      setRows(parsed);
-    } catch {
-      toast.error("Lecture du fichier impossible");
-    }
+    try { applyParsed(await file.text()); } catch { toast.error("Lecture du fichier impossible"); }
+  };
+
+  const loadFromDrive = async () => {
+    if (!driveFileId) return;
+    setLoadingDrive(true);
+    const content = await fetchSgDriveFileContent(driveFileId);
+    setLoadingDrive(false);
+    if (content == null) { toast.error("Lecture du fichier Drive impossible"); return; }
+    applyParsed(content);
   };
 
   const submit = () => {
@@ -178,7 +201,29 @@ export function ImportMembersDialog({ open, onOpenChange }: { open: boolean; onO
         <p className="text-sm text-muted-foreground">
           Colonnes reconnues : <strong>Prénom; Nom; Email; Téléphone; Pôle; Rôle; Année; Promo; Statut; Ville</strong>.
         </p>
-        <Input type="file" accept=".csv,text/csv" onChange={(e) => onFile(e.target.files?.[0])} />
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Depuis un fichier</Label>
+          <Input type="file" accept=".csv,text/csv" onChange={(e) => onFile(e.target.files?.[0])} />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Depuis Google Drive</Label>
+          {driveFiles.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Aucun fichier .csv dans le dossier Drive (ou Drive non lié).</p>
+          ) : (
+            <div className="flex gap-2">
+              <NativeSelect className="flex-1" value={driveFileId} onChange={(e) => setDriveFileId(e.target.value)}>
+                <NativeSelectOption value="">Choisir un fichier…</NativeSelectOption>
+                {driveFiles.map((f) => <NativeSelectOption key={f.id} value={f.id}>{f.name}</NativeSelectOption>)}
+              </NativeSelect>
+              <Button variant="outline" disabled={!driveFileId || loadingDrive} onClick={loadFromDrive}>
+                {loadingDrive ? "Chargement…" : "Charger"}
+              </Button>
+            </div>
+          )}
+        </div>
+
         {rows.length > 0 && (
           <div className="max-h-40 overflow-y-auto rounded-md bg-muted/50 p-3 text-sm">
             <strong>{rows.length}</strong> membre(s) prêts :

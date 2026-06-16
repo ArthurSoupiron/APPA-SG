@@ -147,3 +147,23 @@ export async function listAssocDriveFiles(
     return { ok: false, message: e instanceof Error ? e.message : String(e) };
   }
 }
+
+/** Récupère le contenu texte (CSV…) d'un fichier Drive — pour l'import. */
+export async function downloadAssocDriveFileText(
+  userId: string,
+  fileId: string,
+): Promise<{ ok: true; content: string } | { ok: false; message: string }> {
+  const authRes = await getDriveAuthForUser(userId);
+  if (!authRes.ok) return { ok: false, message: authRes.message };
+
+  const api = google.drive({ version: "v3", auth: authRes.auth });
+  try {
+    const res = await api.files.get(
+      { fileId, alt: "media", supportsAllDrives: true },
+      { responseType: "text" },
+    );
+    return { ok: true, content: typeof res.data === "string" ? res.data : String(res.data) };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : String(e) };
+  }
+}
