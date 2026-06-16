@@ -158,14 +158,19 @@ export function SgDocuments() {
               const author = data.members.find((m) => m.id === d.author);
               const sb = STATUS_BADGE[d.status];
               return (
-                <div key={d.id} className={cn("flex items-center gap-3 px-4 py-3", checked.has(d.id) && "bg-primary/5")}>
+                <div key={d.id} className={cn("flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40", checked.has(d.id) && "bg-primary/5")}>
                   <Checkbox checked={checked.has(d.id)} onCheckedChange={() => toggle(d.id)} aria-label={`Sélectionner ${d.title}`} />
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/50 text-[10px] font-semibold uppercase text-muted-foreground">
+                    {d.format}
+                  </div>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{d.title}</div>
-                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      <span>{d.format} · {d.pages} p.</span>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                      <Badge variant="outline" className="font-normal">{data.gedCats.find((c) => c.id === d.cat)?.label ?? d.cat}</Badge>
                       <span className="font-mono">{d.ref}</span>
+                      <span>· {d.pages} p.</span>
                       {author && <span>· {author.first} {author.last[0]}.</span>}
+                      {d.signedAt && <span>· signé le {d.signedAt}</span>}
                     </div>
                   </div>
                   {d.signature && <SignaturePreview src={d.signature} />}
@@ -174,12 +179,19 @@ export function SgDocuments() {
                     size="sm"
                     variant="ghost"
                     onClick={() => mutate(mutations.toggleGedFav(d.id))}
-                    className={d.fav ? "text-amber-500" : "text-muted-foreground"}
+                    className={cn("px-2", d.fav ? "text-amber-500" : "text-muted-foreground")}
                   >
                     ★
                   </Button>
                   {d.driveWebViewLink && (
-                    <a href={d.driveWebViewLink} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">Drive</a>
+                    <a
+                      href={d.driveWebViewLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-8 items-center rounded-md border border-border px-2.5 text-xs font-medium hover:bg-muted"
+                    >
+                      Drive
+                    </a>
                   )}
                   {d.status === "pending" && (
                     <Button size="sm" onClick={() => setSignDoc(d)}>Signer</Button>
