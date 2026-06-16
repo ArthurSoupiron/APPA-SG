@@ -97,6 +97,21 @@ export function SgDocuments() {
         </div>
       </div>
 
+      {/* cartes de synthèse */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { k: "Total", v: data.docs.length, tone: "text-foreground" },
+          { k: "À signer", v: data.docs.filter((d) => d.status === "pending").length, tone: "text-amber-500" },
+          { k: "Signés", v: data.docs.filter((d) => d.status === "signed").length, tone: "text-primary" },
+          { k: "Archivés", v: data.docs.filter((d) => d.status === "archived").length, tone: "text-muted-foreground" },
+        ].map((c) => (
+          <Card key={c.k} className="p-4">
+            <div className={cn("text-2xl font-semibold tabular-nums", c.tone)}>{c.v}</div>
+            <div className="text-xs text-muted-foreground">{c.k}</div>
+          </Card>
+        ))}
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
         {/* catégories */}
         <Card className="h-fit p-2">
