@@ -1,7 +1,12 @@
 import type { Hono as HonoType } from "hono";
 import { Hono } from "hono";
 
-import { listAssocDriveFiles, uploadAssocDocument } from "../../lib/assoc/assoc-drive";
+import {
+  checkAssocFolderAccess,
+  getAssocFolderConfig,
+  listAssocDriveFiles,
+  uploadAssocDocument,
+} from "../../lib/assoc/assoc-drive";
 import { parseUploadFilesFromFormData } from "../../lib/multipart-files";
 import type { AppVariables } from "../../types/app";
 import { denyUnlessAuthenticated } from "./helpers";
@@ -44,6 +49,29 @@ export function registerAssocDriveRoutes(app: HonoType<{ Variables: AppVariables
       },
       201,
     );
+  });
+
+  // État de la config Drive (ID du dossier + test d'accès) — pour la page Paramètres.
+  router.get("/drive/status", async (c) => {
+    const denied = denyUnlessAuthenticated(c);
+    if (denied) return denied;
+    const user = c.get("user");
+    if (!user) return c.json({ error: "unauthorized" }, 401);
+
+    const config = getAssocFolderConfig();
+    if (!config.folderId) {
+      return c.json({ configured: false, folderId: null, source: config.source, accessible: false });
+    }
+    const access = await checkAssocFolderAccess(user.id);
+    return c.json({
+      configured: true,
+      folderId: config.folderId,
+      source: config.source,
+      accessible: access.ok,
+      folderName: access.ok ? access.name : null,
+      webViewLink: access.ok ? access.webViewLink : null,
+      message: access.ok ? null : access.message,
+    });
   });
 
   // Liste les fichiers du dossier Drive SG (pour l'import dans la GED).

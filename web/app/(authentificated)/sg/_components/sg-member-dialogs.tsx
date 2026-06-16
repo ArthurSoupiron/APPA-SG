@@ -163,12 +163,8 @@ export function ImportMembersDialog({ open, onOpenChange }: { open: boolean; onO
 
   const submit = () => {
     if (!rows.length) return;
-    mutate((draft) => {
-      let d = draft;
-      for (const row of rows) d = mutations.addMember(row)(d);
-      return d;
-    });
-    toast.success(`${rows.length} membre(s) importé(s)`);
+    mutate(mutations.importMembers(rows)); // dédup par email
+    toast.success(`${rows.length} ligne(s) importée(s) (doublons ignorés)`);
     setRows([]);
     onOpenChange(false);
   };

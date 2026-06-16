@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+
+import { fetchSgDriveStatus, type SgDriveStatus } from "../_lib/sg-api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +24,19 @@ import { gedCount, useSg } from "../_lib/sg-store";
 export function SgParametres() {
   const { data, mutate, reset } = useSg();
   const [confirmReset, setConfirmReset] = useState(false);
+  const [drive, setDrive] = useState<SgDriveStatus | null>(null);
+  const [testingDrive, setTestingDrive] = useState(false);
+
+  const loadDrive = async () => {
+    setTestingDrive(true);
+    setDrive(await fetchSgDriveStatus());
+    setTestingDrive(false);
+  };
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chargement au montage uniquement
+  useEffect(() => {
+    void loadDrive();
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -89,29 +104,76 @@ export function SgParametres() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">Données de démonstration</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Recharger les données</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Vos modifications sont enregistrées localement dans ce navigateur. Réinitialiser efface ces changements
-              et restaure le jeu de données d'origine.
+              Les données du module sont enregistrées dans la base (Postgres). Recharger annule les éventuelles
+              modifications locales non sauvegardées et récupère l'état de la base.
             </p>
-            <Button variant="outline" onClick={() => setConfirmReset(true)}>Réinitialiser la démo</Button>
+            <Button variant="outline" onClick={() => setConfirmReset(true)}>Recharger depuis la base</Button>
           </CardContent>
         </Card>
       </div>
 
+      {/* Intégration Google Drive */}
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle className="text-base">Google Drive</CardTitle>
+          <Button size="sm" variant="outline" disabled={testingDrive} onClick={() => void loadDrive()}>
+            {testingDrive ? "Test…" : "Tester l'accès"}
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          {!drive && <p className="text-muted-foreground">Vérification de la configuration…</p>}
+          {drive && !drive.configured && (
+            <p className="text-amber-600">
+              Aucun dossier configuré. Renseignez <span className="font-mono">DRIVE_SG_FOLDER_ID</span> (ou
+              <span className="font-mono"> DRIVE_SG_PARENT_FOLDER_URL</span>) dans <span className="font-mono">backend/.env</span>.
+            </p>
+          )}
+          {drive?.configured && (
+            <>
+              <div className="flex items-center justify-between border-b border-border py-2">
+                <span className="text-muted-foreground">ID du dossier</span>
+                <span className="font-mono text-xs">{drive.folderId}</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-border py-2">
+                <span className="text-muted-foreground">Source</span>
+                <Badge variant="outline">{drive.source === "id" ? "ID direct" : "URL"}</Badge>
+              </div>
+              <div className="flex items-center justify-between border-b border-border py-2">
+                <span className="text-muted-foreground">Accès</span>
+                {drive.accessible ? (
+                  <Badge>Connecté{drive.folderName ? ` · ${drive.folderName}` : ""}</Badge>
+                ) : (
+                  <Badge variant="secondary">Non accessible</Badge>
+                )}
+              </div>
+              {!drive.accessible && drive.message && (
+                <p className="text-amber-600">{drive.message}</p>
+              )}
+              {drive.accessible && drive.webViewLink && (
+                <a href={drive.webViewLink} target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                  Ouvrir le dossier dans Drive
+                </a>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Réinitialiser la démo ?</AlertDialogTitle>
+            <AlertDialogTitle>Recharger depuis la base ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Toutes les modifications locales seront effacées et les données d'origine restaurées.
+              Les modifications locales non sauvegardées seront annulées et l'état de la base sera rechargé.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { reset(); toast.success("Données réinitialisées"); }}>
-              Tout réinitialiser
+            <AlertDialogAction onClick={() => { reset(); toast.success("Données rechargées"); }}>
+              Recharger
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -270,6 +270,20 @@ export const mutations = {
     pushActivity(draft, { action: "a créé le dossier de", target: `${m.first} ${m.last}`, ctx: "nouveau membre", icon: "user-add", tone: "brand" });
     return draft;
   },
+  importMembers: (inputs: NewMemberInput[]) => (draft: SgData): SgData => {
+    const seen = new Set(draft.members.map((m) => m.email.toLowerCase().trim()));
+    let added = 0;
+    for (const input of inputs) {
+      const email = (input.email ?? "").toLowerCase().trim();
+      if (email && seen.has(email)) continue; // pas de doublon (cf. cahier des charges SG)
+      const m = makeMember(draft, input);
+      draft.members.push(m);
+      if (email) seen.add(email);
+      added += 1;
+    }
+    if (added) pushActivity(draft, { action: "a importé", target: `${added} membre(s)`, ctx: "import CSV", icon: "user-add", tone: "brand" });
+    return draft;
+  },
   updateMember: (id: string, patch: Partial<Member>) => (draft: SgData): SgData => {
     const m = memberById(draft, id);
     if (!m) return draft;

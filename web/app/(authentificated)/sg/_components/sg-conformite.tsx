@@ -17,8 +17,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { uploadSgFileToDrive } from "../_lib/sg-api";
 import { conformityScore, deadlineInfo, mutations, rollups, useSg } from "../_lib/sg-store";
-import { downloadBlob } from "../_lib/sg-utils";
+import { buildConformiteCsv, buildDeadlinesCsv, downloadBlob } from "../_lib/sg-utils";
 import { Ring } from "./sg-bits";
 import type { CheckState } from "../_lib/sg-types";
 
@@ -70,8 +71,18 @@ export function SgConformite() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">Suivi des obligations légales · label CNJE</p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={downloadReport}>Rapport de conformité</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              const up = await uploadSgFileToDrive("conformite-jeece-sg.csv", buildConformiteCsv(data));
+              up ? toast.success("Conformité exportée vers Drive") : toast.error("Export Drive impossible (Drive lié ?).");
+            }}
+          >
+            Exporter vers Drive
+          </Button>
           <Button size="sm" onClick={runAudit}>Lancer un audit</Button>
         </div>
       </div>
@@ -119,7 +130,19 @@ export function SgConformite() {
         <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle className="text-base">Prochaines échéances</CardTitle>
-            <Button size="sm" variant="outline" onClick={() => setDeadlineOpen(true)}>Ajouter</Button>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  const up = await uploadSgFileToDrive("echeances-jeece-sg.csv", buildDeadlinesCsv(data));
+                  up ? toast.success("Échéances exportées vers Drive") : toast.error("Export Drive impossible (Drive lié ?).");
+                }}
+              >
+                Exporter vers Drive
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setDeadlineOpen(true)}>Ajouter</Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-2">
             {data.deadlines.map((d) => {

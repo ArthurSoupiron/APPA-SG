@@ -29,8 +29,9 @@ import {
 } from "@/components/ui/table";
 
 import { useSgBase } from "../_lib/sg-base";
+import { uploadSgFileToDrive } from "../_lib/sg-api";
 import { dossierStats, mutations, useSg } from "../_lib/sg-store";
-import { exportMembersCSV } from "../_lib/sg-utils";
+import { buildMembersCsv, exportMembersCSV } from "../_lib/sg-utils";
 import { CompletenessBar, DocDots, SgAvatar, StatusBadge } from "./sg-bits";
 import { ImportMembersDialog, MemberFormDialog } from "./sg-member-dialogs";
 
@@ -100,6 +101,16 @@ export function SgMembers() {
         </p>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => exportMembersCSV(data)}>Exporter</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              const up = await uploadSgFileToDrive("membres-jeece-sg.csv", buildMembersCsv(data));
+              up ? toast.success("Membres exportés vers Drive") : toast.error("Export Drive impossible (Drive lié ?).");
+            }}
+          >
+            Exporter vers Drive
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>Importer</Button>
           <Button size="sm" onClick={() => setCreateOpen(true)}>Nouveau membre</Button>
         </div>

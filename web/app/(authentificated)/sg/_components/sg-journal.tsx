@@ -8,8 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 
+import { toast } from "sonner";
+
+import { uploadSgFileToDrive } from "../_lib/sg-api";
 import { useSg } from "../_lib/sg-store";
-import { downloadBlob } from "../_lib/sg-utils";
+import { buildJournalCsv, downloadBlob } from "../_lib/sg-utils";
 import { SgAvatar } from "./sg-bits";
 
 export function SgJournal() {
@@ -47,7 +50,19 @@ export function SgJournal() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{data.activity.length} entrées · traçabilité complète</p>
-        <Button variant="outline" size="sm" onClick={exportJournal}>Exporter le journal</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={exportJournal}>Exporter le journal</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              const up = await uploadSgFileToDrive("journal-jeece-sg.csv", buildJournalCsv(data));
+              up ? toast.success("Journal exporté vers Drive") : toast.error("Export Drive impossible (Drive lié ?).");
+            }}
+          >
+            Exporter vers Drive
+          </Button>
+        </div>
       </div>
 
       <Card className="flex flex-wrap items-center gap-2 p-3">

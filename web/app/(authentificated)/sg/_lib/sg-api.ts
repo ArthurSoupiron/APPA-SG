@@ -69,6 +69,37 @@ export async function uploadSgDocument(file: File): Promise<SgDriveUpload | null
   }
 }
 
+/** Génère un fichier (CSV/HTML…) côté client et l'envoie dans le dossier Drive SG. */
+export async function uploadSgFileToDrive(
+  filename: string,
+  content: string,
+  mimeType = "text/csv;charset=utf-8",
+): Promise<SgDriveUpload | null> {
+  const file = new File([content], filename, { type: mimeType });
+  return uploadSgDocument(file);
+}
+
+export type SgDriveStatus = {
+  configured: boolean;
+  folderId: string | null;
+  source: "id" | "url" | "none";
+  accessible: boolean;
+  folderName?: string | null;
+  webViewLink?: string | null;
+  message?: string | null;
+};
+
+/** État de la configuration Drive (ID dossier + test d'accès) — page Paramètres. */
+export async function fetchSgDriveStatus(): Promise<SgDriveStatus | null> {
+  try {
+    const res = await fetch("/api/app/assoc/drive/status", { credentials: "include" });
+    if (!res.ok) return null;
+    return (await res.json()) as SgDriveStatus;
+  } catch {
+    return null;
+  }
+}
+
 export type SgDriveFile = {
   id: string;
   name: string;

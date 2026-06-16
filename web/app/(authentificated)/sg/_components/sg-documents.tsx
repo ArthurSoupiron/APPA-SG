@@ -31,9 +31,9 @@ import {
 
 import { cn } from "@/lib/utils";
 import { gedCount, mutations, useSg } from "../_lib/sg-store";
-import { exportDocsCSV } from "../_lib/sg-utils";
+import { buildDocsCsv, exportDocsCSV } from "../_lib/sg-utils";
 import type { GedDoc } from "../_lib/sg-types";
-import { listSgDriveFiles, uploadSgDocument, type SgDriveFile } from "../_lib/sg-api";
+import { listSgDriveFiles, uploadSgDocument, uploadSgFileToDrive, type SgDriveFile } from "../_lib/sg-api";
 import { SignDocumentDialog, SignaturePreview } from "./sg-signature-pad";
 
 const STATUS_BADGE: Record<GedDoc["status"], { label: string; variant: "default" | "secondary" | "outline" }> = {
@@ -80,8 +80,18 @@ export function SgDocuments() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{data.docs.length} documents centralisés · cloud chiffré · accès tracé</p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => exportDocsCSV(data)}>Exporter</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              const up = await uploadSgFileToDrive("documents-jeece-sg.csv", buildDocsCsv(data));
+              up ? toast.success("Liste exportée vers Drive") : toast.error("Export Drive impossible (Drive lié ?).");
+            }}
+          >
+            Exporter vers Drive
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>Importer depuis Drive</Button>
           <Button size="sm" onClick={() => setCreateOpen(true)}>Déposer un document</Button>
         </div>

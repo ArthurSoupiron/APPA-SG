@@ -7,11 +7,62 @@ import { parseDriveFolderIdFromUrl } from "../si-drive";
 
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 
-/** Dossier Drive racine de la Gestion Associative (variable d'env DRIVE_SG_PARENT_FOLDER_URL). */
+/**
+ * Dossier Drive racine de la Gestion Associative.
+ * Priorité à l'ID direct `DRIVE_SG_FOLDER_ID`, sinon on extrait l'ID de
+ * `DRIVE_SG_PARENT_FOLDER_URL` (rétro-compatibilité).
+ */
 export function getAssocParentFolderId(): string | null {
+  const id = process.env.DRIVE_SG_FOLDER_ID?.trim();
+  if (id) return id;
   const url = process.env.DRIVE_SG_PARENT_FOLDER_URL?.trim();
   if (!url) return null;
   return parseDriveFolderIdFromUrl(url);
+}
+
+/** Source de configuration du dossier (pour l'affichage dans les Paramètres). */
+export function getAssocFolderConfig(): { folderId: string | null; source: "id" | "url" | "none" } {
+  if (process.env.DRIVE_SG_FOLDER_ID?.trim()) {
+    return { folderId: process.env.DRIVE_SG_FOLDER_ID.trim(), source: "id" };
+  }
+  const url = process.env.DRIVE_SG_PARENT_FOLDER_URL?.trim();
+  if (url) return { folderId: parseDriveFolderIdFromUrl(url), source: "url" };
+  return { folderId: null, source: "none" };
+}
+
+/** Vérifie que le dossier configuré est accessible par l'utilisateur (test d'accès). */
+export async function checkAssocFolderAccess(
+  userId: string,
+): Promise<
+  | { ok: true; folderId: string; name: string; webViewLink: string | null }
+  | { ok: false; message: string }
+> {
+  const parentId = getAssocParentFolderId();
+  if (!parentId) {
+    return { ok: false, message: "Aucun dossier configuré (DRIVE_SG_FOLDER_ID ou DRIVE_SG_PARENT_FOLDER_URL)." };
+  }
+  const authRes = await getDriveAuthForUser(userId);
+  if (!authRes.ok) return { ok: false, message: authRes.message };
+
+  const api = google.drive({ version: "v3", auth: authRes.auth });
+  try {
+    const res = await api.files.get({
+      fileId: parentId,
+      fields: "id, name, mimeType, webViewLink",
+      supportsAllDrives: true,
+    });
+    if (res.data.mimeType !== FOLDER_MIME) {
+      return { ok: false, message: "L'ID configuré ne correspond pas à un dossier Drive." };
+    }
+    return {
+      ok: true,
+      folderId: res.data.id ?? parentId,
+      name: res.data.name ?? "(sans nom)",
+      webViewLink: res.data.webViewLink ?? null,
+    };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 export type AssocDriveFile = {
