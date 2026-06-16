@@ -34,6 +34,7 @@ import { gedCount, mutations, useSg } from "../_lib/sg-store";
 import { buildDocsCsv, exportDocsCSV } from "../_lib/sg-utils";
 import type { GedDoc } from "../_lib/sg-types";
 import { listSgDriveFiles, uploadSgDocument, uploadSgFileToDrive, type SgDriveFile } from "../_lib/sg-api";
+import { IconArchive, IconCheck, IconDoc, IconPen, StatCard } from "./sg-bits";
 import { SignDocumentDialog, SignaturePreview } from "./sg-signature-pad";
 
 const STATUS_BADGE: Record<GedDoc["status"], { label: string; variant: "default" | "secondary" | "outline" }> = {
@@ -99,17 +100,10 @@ export function SgDocuments() {
 
       {/* cartes de synthèse */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { k: "Total", v: data.docs.length, tone: "text-foreground" },
-          { k: "À signer", v: data.docs.filter((d) => d.status === "pending").length, tone: "text-amber-500" },
-          { k: "Signés", v: data.docs.filter((d) => d.status === "signed").length, tone: "text-primary" },
-          { k: "Archivés", v: data.docs.filter((d) => d.status === "archived").length, tone: "text-muted-foreground" },
-        ].map((c) => (
-          <Card key={c.k} className="p-4">
-            <div className={cn("text-2xl font-semibold tabular-nums", c.tone)}>{c.v}</div>
-            <div className="text-xs text-muted-foreground">{c.k}</div>
-          </Card>
-        ))}
+        <StatCard label="Documents" value={data.docs.length} accent="blue" icon={<IconDoc />} />
+        <StatCard label="À signer" value={data.docs.filter((d) => d.status === "pending").length} accent="amber" icon={<IconPen />} />
+        <StatCard label="Signés" value={data.docs.filter((d) => d.status === "signed").length} accent="primary" icon={<IconCheck />} />
+        <StatCard label="Archivés" value={data.docs.filter((d) => d.status === "archived").length} accent="muted" icon={<IconArchive />} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[220px_1fr]">

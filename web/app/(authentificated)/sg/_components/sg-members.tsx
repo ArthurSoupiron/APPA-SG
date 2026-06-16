@@ -32,7 +32,7 @@ import { useSgBase } from "../_lib/sg-base";
 import { uploadSgFileToDrive } from "../_lib/sg-api";
 import { dossierStats, mutations, useSg } from "../_lib/sg-store";
 import { buildMembersCsv, exportMembersCSV } from "../_lib/sg-utils";
-import { CompletenessBar, DocDots, SgAvatar, StatusBadge } from "./sg-bits";
+import { CompletenessBar, DocDots, IconCheck, IconClock, IconUsers, SgAvatar, StatCard, StatusBadge } from "./sg-bits";
 import { ImportMembersDialog, MemberFormDialog } from "./sg-member-dialogs";
 
 export function SgMembers() {
@@ -114,6 +114,14 @@ export function SgMembers() {
           <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>Importer</Button>
           <Button size="sm" onClick={() => setCreateOpen(true)}>Nouveau membre</Button>
         </div>
+      </div>
+
+      {/* cartes de synthèse */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard label="Membres" value={data.members.length} accent="blue" icon={<IconUsers />} />
+        <StatCard label="Actifs" value={data.members.filter((m) => m.status === "active").length} accent="primary" icon={<IconCheck />} />
+        <StatCard label="Postulants" value={data.members.filter((m) => m.status === "pending").length} accent="amber" icon={<IconClock />} />
+        <StatCard label="Dossiers complets" value={counts.complete} accent="violet" icon={<IconCheck />} />
       </div>
 
       {/* filtres */}
