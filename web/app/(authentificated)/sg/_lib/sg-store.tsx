@@ -35,12 +35,16 @@ export function SgStoreProvider({ children }: { children: React.ReactNode }) {
       loaded.current = true;
       if (!state) return;
       setData((prev) => {
+        // Base vide → on conserve le jeu de démonstration (seed) pour pouvoir
+        // naviguer ; dès que la base contient des données, elles priment.
+        const pick = <T,>(remote: T[] | undefined, seed: T[]): T[] =>
+          remote && remote.length ? remote : seed;
         const merged: SgData = {
           ...prev,
-          members: state.members ?? [],
-          docs: state.docs ?? [],
-          deadlines: state.deadlines ?? [],
-          conformite: state.conformite ?? [],
+          members: pick(state.members, prev.members),
+          docs: pick(state.docs, prev.docs),
+          deadlines: pick(state.deadlines, prev.deadlines),
+          conformite: pick(state.conformite, prev.conformite),
         };
         latest.current = merged;
         return merged;
