@@ -31,7 +31,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useRouter } from "next/navigation";
 import { useSgBase } from "../_lib/sg-base";
-import { sendRelanceEmail } from "../_lib/sg-api";
 import { dossierStats, mutations, useSg } from "../_lib/sg-store";
 import type { DocState, Member } from "../_lib/sg-types";
 import { Ring, SgAvatar, StatusBadge } from "./sg-bits";
@@ -68,7 +67,7 @@ export function SgDossier({ memberId }: { memberId: string }) {
   const s = dossierStats(data, m);
   const mandates = m.mandates ?? [{ role: m.role, period: `Depuis ${m.joined}`, current: true }];
 
-  const relance = async () => {
+  const relance = () => {
     const missing = data.docTypes.filter((d) => d.required && m.docs[d.code] !== "ok");
     if (!missing.length) {
       toast.info(`Dossier de ${m.first} déjà complet`);
@@ -77,14 +76,8 @@ export function SgDossier({ memberId }: { memberId: string }) {
     const lines = missing.map((p) => `  - ${p.label} (${m.docs[p.code] === "pending" ? "en attente" : "manquante"})`);
     const subject = `[JEECE · SG] Dossier membre à compléter — ${m.first} ${m.last}`;
     const body = `Bonjour ${m.first},\n\nMerci de fournir les pièces suivantes dès que possible :\n\n${lines.join("\n")}\n\nLe Secrétariat Général · JEECE`;
-    // Envoi automatique côté serveur ; repli sur un brouillon mailto si le SMTP n'est pas configuré.
-    const res = await sendRelanceEmail(m.email, subject, body);
-    if (res === "sent") {
-      toast.success(`Relance envoyée à ${m.first}`);
-      return;
-    }
     window.location.href = `mailto:${encodeURIComponent(m.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    toast.info(res === "unconfigured" ? "Envoi auto non configuré — brouillon ouvert" : "Envoi auto indisponible — brouillon ouvert");
+    toast.success(`Relance préparée pour ${m.first}`);
   };
 
   return (

@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/table";
 
 import { useSgBase } from "../_lib/sg-base";
-import { sendRelanceEmail, uploadSgFileToDrive } from "../_lib/sg-api";
+import { uploadSgFileToDrive } from "../_lib/sg-api";
 import { dossierStats, mutations, useSg } from "../_lib/sg-store";
 import { buildMembersCsv, exportMembersCSV } from "../_lib/sg-utils";
 import { CompletenessBar, DocDots, IconCheck, IconClock, IconUsers, SgAvatar, StatCard, StatusBadge } from "./sg-bits";
@@ -81,24 +81,17 @@ export function SgMembers() {
 
   const allChecked = list.length > 0 && list.every((m) => checked.has(m.id));
 
-  const bulkRelance = async () => {
+  const bulkRelance = () => {
     const targets = list.filter((m) => checked.has(m.id) && dossierStats(data, m).pct < 100 && m.status !== "alumni");
     if (!targets.length) {
       toast.info("Aucun dossier incomplet à relancer");
       return;
     }
+    const emails = targets.map((m) => m.email).join(",");
     const subject = "[JEECE · SG] Dossier membre à compléter";
     const body = "Bonjour,\n\nMerci de compléter les pièces manquantes de ton dossier membre JEECE dès que possible.\n\nLe Secrétariat Général · JEECE";
-    // Envoi automatique côté serveur (un mail par membre) ; repli mailto groupé si SMTP non configuré.
-    const results = await Promise.all(targets.map((m) => sendRelanceEmail(m.email, subject, body)));
-    const sent = results.filter((r) => r === "sent").length;
-    if (sent === targets.length) {
-      toast.success(`Relance envoyée à ${sent} membre(s)`);
-      return;
-    }
-    const emails = targets.map((m) => m.email).join(",");
     window.location.href = `mailto:${encodeURIComponent(emails)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    toast.info(sent ? `${sent} envoyé(s) — brouillon ouvert pour le reste` : "Envoi auto indisponible — brouillon ouvert");
+    toast.success(`Relance préparée pour ${targets.length} membre(s)`);
   };
 
   return (
