@@ -19,7 +19,19 @@ import { fetchSgDriveFileContent, listSgDriveFiles, type SgDriveFile } from "../
 import { mutations, useSg, type NewMemberInput } from "../_lib/sg-store";
 import type { Member } from "../_lib/sg-types";
 
-const YEARS = ["L1", "L2", "L3", "M1", "M2", "Diplômé"];
+const YEARS = ["ING1", "ING2", "ING3", "ING4", "ING5"];
+const POLES = [
+  "Commercial",
+  "Communication",
+  "Études",
+  "Général",
+  "Local",
+  "Présidence",
+  "Qualité",
+  "RFP Pious",
+  "Systèmes d'Information",
+  "Trésorerie",
+];
 const STATUSES: { value: string; label: string }[] = [
   { value: "active", label: "Actif" },
   { value: "pending", label: "Postulant" },
@@ -49,8 +61,8 @@ export function MemberFormDialog({
   member?: Member;
   onCreated?: (id: string) => void;
 }) {
-  const { data, mutate } = useSg();
-  const poles = Array.from(new Set(data.members.map((m) => m.pole)));
+  const { mutate } = useSg();
+  const poles = POLES;
   const isEdit = Boolean(member);
   const [f, setF] = useState<FormState>(() =>
     member
@@ -67,7 +79,7 @@ export function MemberFormDialog({
           birth: member.birth ?? "",
           address: member.address ?? "",
         }
-      : { first: "", last: "", email: "", role: "", pole: poles[0] ?? "SI", year: "L1", status: "active", phone: "", city: "" },
+      : { first: "", last: "", email: "", role: "", pole: poles[0], year: "ING1", status: "active", phone: "", city: "" },
   );
   const set = (k: keyof FormState) => (v: string) => setF((s) => ({ ...s, [k]: v }));
   const valid = (f.first ?? "").trim() && (f.last ?? "").trim();
