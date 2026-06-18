@@ -1,20 +1,15 @@
 import type { Hono as HonoType } from "hono";
 import { Hono } from "hono";
 
-import { isMarketingIntegrationConfigured } from "../../lib/marketing/marketing-env";
-import { sendSmtpMail } from "../../lib/marketing/smtp-send";
+import { getMarketingEnv, isMarketingIntegrationConfigured } from "../../lib/marketing/marketing-env";
 import type { AppVariables } from "../../types/app";
 import { asString, denyUnlessAuthenticated, readJsonBody } from "./helpers";
 
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
 /**
  * Relance de dossier membre par email (module SG).
- * Réutilise le SMTP déjà configuré côté backend (cf. SMTP_* dans .env).
- * Renvoie 503 { configured: false } si le SMTP n'est pas configuré → le front
- * bascule alors sur un brouillon mailto.
+ * Envoi réel via nodemailer (STARTTLS/SMTPS géré proprement), en réutilisant
+ * la config SMTP_* du backend. Renvoie 503 { configured: false } si le SMTP
+ * n'est pas configuré → le front bascule alors sur un brouillon mailto.
  */
 export function registerAssocRelanceRoutes(app: HonoType<{ Variables: AppVariables }>) {
   const router = new Hono<{ Variables: AppVariables }>();
@@ -35,10 +30,22 @@ export function registerAssocRelanceRoutes(app: HonoType<{ Variables: AppVariabl
       return c.json({ configured: false }, 503);
     }
 
-    const html = `<pre style="font-family:inherit;white-space:pre-wrap;margin:0">${escapeHtml(text)}</pre>`;
-    const res = await sendSmtpMail({ to, subject, html });
-    if (res.ok) return c.json({ sent: true });
-    return c.json({ error: res.error }, 502);
+    const { smtp } = getMarketingEnv();
+    try {
+      const nodemailer = (await import("nodemailer")).default;
+      const transport = nodemailer.createTransport({
+        host: smtp.host,
+        port: smtp.port,
+        secure: smtp.port === 465, // 465 = TLS implicite ; 587 = STARTTLS (auto)
+        auth: { user: smtp.user, pass: smtp.pass },
+      });
+      const from = smtp.fromName ? `"${smtp.fromName}" <${smtp.from}>` : smtp.from;
+      const info = await transport.sendMail({ from, to, subject, text });
+      return c.json({ sent: true, messageId: info.messageId });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Envoi impossible";
+      return c.json({ error: message }, 502);
+    }
   });
 
   app.route("/api/app/assoc", router);
