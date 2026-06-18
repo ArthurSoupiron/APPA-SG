@@ -76,8 +76,10 @@ export function SgDossier({ memberId }: { memberId: string }) {
     const lines = missing.map((p) => `  - ${p.label} (${m.docs[p.code] === "pending" ? "en attente" : "manquante"})`);
     const subject = `[JEECE · SG] Dossier membre à compléter — ${m.first} ${m.last}`;
     const body = `Bonjour ${m.first},\n\nMerci de fournir les pièces suivantes dès que possible :\n\n${lines.join("\n")}\n\nLe Secrétariat Général · JEECE`;
-    window.location.href = `mailto:${encodeURIComponent(m.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    toast.success(`Relance préparée pour ${m.first}`);
+    // Ouvre un brouillon Gmail pré-rempli (fiable sur Workspace JEECE, sans dépendre du handler mailto).
+    const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(m.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+    toast.success(`Brouillon de relance ouvert pour ${m.first}`);
   };
 
   return (

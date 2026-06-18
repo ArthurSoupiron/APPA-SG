@@ -90,8 +90,10 @@ export function SgMembers() {
     const emails = targets.map((m) => m.email).join(",");
     const subject = "[JEECE · SG] Dossier membre à compléter";
     const body = "Bonjour,\n\nMerci de compléter les pièces manquantes de ton dossier membre JEECE dès que possible.\n\nLe Secrétariat Général · JEECE";
-    window.location.href = `mailto:${encodeURIComponent(emails)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    toast.success(`Relance préparée pour ${targets.length} membre(s)`);
+    // Ouvre un brouillon Gmail pré-rempli (fiable sur Workspace JEECE, sans dépendre du handler mailto).
+    const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(emails)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+    toast.success(`Brouillon de relance ouvert pour ${targets.length} membre(s)`);
   };
 
   return (
