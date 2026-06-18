@@ -20,7 +20,7 @@ import { mutations, useSg, type NewMemberInput } from "../_lib/sg-store";
 import type { Member } from "../_lib/sg-types";
 
 const YEARS = ["ING1", "ING2", "ING3", "ING4", "ING5"];
-const POLES = [
+export const POLES = [
   "Commercial",
   "Communication",
   "Études",

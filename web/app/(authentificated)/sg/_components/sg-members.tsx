@@ -33,7 +33,7 @@ import { uploadSgFileToDrive } from "../_lib/sg-api";
 import { dossierStats, mutations, useSg } from "../_lib/sg-store";
 import { buildMembersCsv, exportMembersCSV } from "../_lib/sg-utils";
 import { CompletenessBar, DocDots, IconCheck, IconClock, IconUsers, SgAvatar, StatCard, StatusBadge } from "./sg-bits";
-import { ImportMembersDialog, MemberFormDialog } from "./sg-member-dialogs";
+import { ImportMembersDialog, MemberFormDialog, POLES } from "./sg-member-dialogs";
 
 export function SgMembers() {
   const { data, mutate } = useSg();
@@ -48,7 +48,7 @@ export function SgMembers() {
   const [driveImportOpen, setDriveImportOpen] = useState(false);
   const [confirmBulk, setConfirmBulk] = useState(false);
 
-  const poles = ["all", ...Array.from(new Set(data.members.map((m) => m.pole)))];
+  const poles = ["all", ...POLES];
 
   const list = useMemo(() => {
     return data.members
