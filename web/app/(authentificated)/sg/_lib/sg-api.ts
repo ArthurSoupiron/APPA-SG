@@ -44,6 +44,29 @@ export async function saveSgState(data: {
   }
 }
 
+export type RelanceResult = "sent" | "unconfigured" | "error";
+
+/**
+ * Envoie une relance de dossier par email (envoi automatique côté serveur).
+ * Renvoie "unconfigured" si le SMTP n'est pas configuré → l'appelant peut
+ * alors basculer sur un brouillon mailto.
+ */
+export async function sendRelanceEmail(to: string, subject: string, body: string): Promise<RelanceResult> {
+  try {
+    const res = await fetch("/api/app/assoc/relance", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ to, subject, body }),
+    });
+    if (res.ok) return "sent";
+    if (res.status === 503) return "unconfigured";
+    return "error";
+  } catch {
+    return "error";
+  }
+}
+
 export type SgDriveUpload = {
   driveFileId: string;
   name: string;

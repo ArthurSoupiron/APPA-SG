@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/table";
 
 import { useSgBase } from "../_lib/sg-base";
-import { uploadSgFileToDrive } from "../_lib/sg-api";
+import { sendRelanceEmail, uploadSgFileToDrive } from "../_lib/sg-api";
 import { dossierStats, mutations, useSg } from "../_lib/sg-store";
 import { buildMembersCsv, exportMembersCSV } from "../_lib/sg-utils";
 import { CompletenessBar, DocDots, IconCheck, IconClock, IconUsers, SgAvatar, StatCard, StatusBadge } from "./sg-bits";
@@ -45,6 +45,7 @@ export function SgMembers() {
   const [checked, setChecked] = useState<Set<string>>(() => new Set());
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [driveImportOpen, setDriveImportOpen] = useState(false);
   const [confirmBulk, setConfirmBulk] = useState(false);
 
   const poles = ["all", ...Array.from(new Set(data.members.map((m) => m.pole)))];
@@ -80,17 +81,24 @@ export function SgMembers() {
 
   const allChecked = list.length > 0 && list.every((m) => checked.has(m.id));
 
-  const bulkRelance = () => {
+  const bulkRelance = async () => {
     const targets = list.filter((m) => checked.has(m.id) && dossierStats(data, m).pct < 100 && m.status !== "alumni");
     if (!targets.length) {
       toast.info("Aucun dossier incomplet à relancer");
       return;
     }
-    const emails = targets.map((m) => m.email).join(",");
     const subject = "[JEECE · SG] Dossier membre à compléter";
     const body = "Bonjour,\n\nMerci de compléter les pièces manquantes de ton dossier membre JEECE dès que possible.\n\nLe Secrétariat Général · JEECE";
+    // Envoi automatique côté serveur (un mail par membre) ; repli mailto groupé si SMTP non configuré.
+    const results = await Promise.all(targets.map((m) => sendRelanceEmail(m.email, subject, body)));
+    const sent = results.filter((r) => r === "sent").length;
+    if (sent === targets.length) {
+      toast.success(`Relance envoyée à ${sent} membre(s)`);
+      return;
+    }
+    const emails = targets.map((m) => m.email).join(",");
     window.location.href = `mailto:${encodeURIComponent(emails)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    toast.success(`Relance préparée pour ${targets.length} membre(s)`);
+    toast.info(sent ? `${sent} envoyé(s) — brouillon ouvert pour le reste` : "Envoi auto indisponible — brouillon ouvert");
   };
 
   return (
@@ -112,6 +120,7 @@ export function SgMembers() {
             Exporter vers Drive
           </Button>
           <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>Importer</Button>
+          <Button variant="outline" size="sm" onClick={() => setDriveImportOpen(true)}>Importer depuis Drive</Button>
           <Button size="sm" onClick={() => setCreateOpen(true)}>Nouveau membre</Button>
         </div>
       </div>
@@ -214,6 +223,7 @@ export function SgMembers() {
 
       <MemberFormDialog open={createOpen} onOpenChange={setCreateOpen} />
       <ImportMembersDialog open={importOpen} onOpenChange={setImportOpen} />
+      <ImportMembersDialog open={driveImportOpen} onOpenChange={setDriveImportOpen} driveFocus />
 
       <AlertDialog open={confirmBulk} onOpenChange={setConfirmBulk}>
         <AlertDialogContent>

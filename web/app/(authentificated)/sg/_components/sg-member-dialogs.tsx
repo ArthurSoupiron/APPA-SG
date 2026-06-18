@@ -129,7 +129,7 @@ export function MemberFormDialog({
   );
 }
 
-export function ImportMembersDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+export function ImportMembersDialog({ open, onOpenChange, driveFocus = false }: { open: boolean; onOpenChange: (v: boolean) => void; driveFocus?: boolean }) {
   const { mutate } = useSg();
   const [rows, setRows] = useState<NewMemberInput[]>([]);
   const [driveFiles, setDriveFiles] = useState<SgDriveFile[]>([]);
@@ -196,16 +196,18 @@ export function ImportMembersDialog({ open, onOpenChange }: { open: boolean; onO
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Importer des membres (CSV)</DialogTitle>
+          <DialogTitle>{driveFocus ? "Importer des membres depuis Google Drive" : "Importer des membres (CSV)"}</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">
           Colonnes reconnues : <strong>Prénom; Nom; Email; Téléphone; Pôle; Rôle; Année; Promo; Statut; Ville</strong>.
         </p>
 
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Depuis un fichier</Label>
-          <Input type="file" accept=".csv,text/csv" onChange={(e) => onFile(e.target.files?.[0])} />
-        </div>
+        {!driveFocus && (
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Depuis un fichier</Label>
+            <Input type="file" accept=".csv,text/csv" onChange={(e) => onFile(e.target.files?.[0])} />
+          </div>
+        )}
 
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Depuis Google Drive</Label>
