@@ -1,13 +1,13 @@
 import { createAuthClient } from "better-auth/react";
 
-const baseURL = process.env.NEXT_PUBLIC_AUTH_URL;
-
-if (!baseURL && typeof window !== "undefined") {
-  console.warn("NEXT_PUBLIC_AUTH_URL n'est pas défini");
-}
+// À défaut de NEXT_PUBLIC_AUTH_URL, on retombe sur l'origine courante
+// (les appels passent par le proxy Next sur /api/auth/*, donc même origine).
+const baseURL =
+  process.env.NEXT_PUBLIC_AUTH_URL ??
+  (typeof window !== "undefined" ? window.location.origin : "");
 
 export const authClient = createAuthClient({
-  baseURL: baseURL ?? "",
+  baseURL,
   fetchOptions: {
     credentials: "include",
     onError(context) {
